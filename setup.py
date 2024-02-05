@@ -10,7 +10,7 @@ setup(
     long_description_content_type='text/markdown',
     author='vishanth',
     author_email='rbvish1007@gmail.com',
-    url='https://github.com/vishanth10/Statistics_for_Lifesciences.git',
+    url='https://github.com/vishanth10/statistics_library.git',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Education',
@@ -21,4 +21,11 @@ setup(
         'Programming Language :: Python :: 3.9',
     ],
     keywords='statistics chi-square analysis',
+    install_requires=[
+        'pandas>=1.0',
+        'numpy>=1.18',
+        'scipy>=1.4',
+        'matplotlib>=3.1',
+        'seaborn>=0.10'
+    ],
 )
