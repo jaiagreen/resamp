@@ -219,4 +219,161 @@ def plot_chi_abs_distribution(simulated_data, observed_data, p_value):
     plt.show()
 
 
+    
+    
+#CALCULATION OF RELATIVE RISK, (SIM DATA VS OBSERVED DATA) CONFIDENCE INTERVAL, PLOT GRAPH
+# Relative Risk of two treatments
+# ProbCalculation
+# Confidence Interval
+# Plotting the Graph
+
+# VERSION - 1 
+
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
+
+def calculate_relative_risk_two_treatments(observed_data, event_row_index, treatment1_index, treatment2_index):
+    """
+    Calculate the relative risk of an event between two specific treatments.
+
+    Parameters:
+        observed_data (np.array): The observed data as a 2D array.
+        event_row_index (int): The row index for the event.
+        treatment1_index (int): The column index for the first treatment.
+        treatment2_index (int): The column index for the second treatment.
+
+    Returns:
+        float: The relative risk of the event between the two treatments.
+    """
+    total_treatment1 = observed_data[:, treatment1_index].sum()
+    total_treatment2 = observed_data[:, treatment2_index].sum()
+    
+    prob_event_treatment1 = observed_data[event_row_index, treatment1_index] / total_treatment1
+    prob_event_treatment2 = observed_data[event_row_index, treatment2_index] / total_treatment2
+    relative_risk = prob_event_treatment1 / prob_event_treatment2
+    return relative_risk
+
+
+def resample_and_calculate_rr(observed_data, event_row_index, reference_treatment_index=0, num_simulations=10000):
+    # Extract the dimensions of the observed_data array
+    total_rows, total_columns = observed_data.shape
+    
+    # Calculate the total counts for each column (treatment group)
+    total_counts_per_column = observed_data.sum(axis=0)
+    
+    # Initialize an array to store simulated RR values
+    simulated_rr = np.zeros(num_simulations)
+
+    # Loop through the specified number of simulations
+    for i in range(num_simulations):
+        # Create an array to simulate a resampled dataset, initialized with zeros
+        simulated_sample = np.zeros_like(observed_data)
+        
+        # Iterate over columns (treatment groups)
+        for col in range(total_columns):
+            # Generate a random sample of 0s and 1s based on the proportions in the observed data
+            column_sample = np.random.choice([0, 1], size=total_counts_per_column[col], replace=True,
+                                             p=[observed_data[1, col] / total_counts_per_column[col], 
+                                                observed_data[0, col] / total_counts_per_column[col]])
+            
+            # Count the occurrences of 0s and 1s in the resampled column
+            simulated_sample[1, col] = np.sum(column_sample == 0)
+            simulated_sample[0, col] = np.sum(column_sample == 1)
+
+        # Calculate the probability of the event for the reference treatment group
+        prob_event_treatment1 = simulated_sample[event_row_index, reference_treatment_index] / total_counts_per_column[reference_treatment_index]
+        
+        # Calculate the probability of the event for the other treatment group
+        prob_event_other_treatment = simulated_sample[event_row_index, 1 - reference_treatment_index] / total_counts_per_column[1 - reference_treatment_index]
+        
+        # Calculate the Risk Ratio (RR) for the current simulated dataset and store it
+        simulated_rr[i] = prob_event_treatment1 / prob_event_other_treatment
+
+    # Return an array of simulated RR values
+    return simulated_rr
+
+
+# Calculate the 95% confidence interval
+def calculate_confidence_interval(simulated_rr, percentile=95):
+    """
+    Calculate the confidence interval for the relative risk based on the distribution of simulated relative risks.
+
+    Parameters:
+        simulated_rr (np.array): Array of simulated relative risks.
+        percentile (float, optional): The percentile for the confidence interval. Defaults to 95.
+
+    Returns:
+        tuple: Lower and upper bounds of the confidence interval.
+    """
+    lower_percentile = (100 - percentile) / 2
+    upper_percentile = 100 - lower_percentile
+    lower_bound = np.percentile(simulated_rr, lower_percentile)
+    upper_bound = np.percentile(simulated_rr, upper_percentile)
+    return lower_bound, upper_bound
+
+def calculate_probabilities_for_each_treatment(observed_data, event_row_index):
+    """
+    Calculate the probabilities of an event for each treatment.
+
+    Parameters:
+        observed_data (np.array or pd.DataFrame): The observed data as a 2D array or DataFrame.
+        event_row_index (int): The row index for the event.
+
+    Returns:
+        dict: Probabilities of the event for each treatment.
+    """
+    if isinstance(observed_data, pd.DataFrame):
+        observed_data = observed_data.to_numpy()
+
+    total_columns = observed_data.shape[1]
+    total_counts_per_treatment = observed_data.sum(axis=0)
+    probabilities = {}
+
+    for col in range(total_columns):
+        prob_event_treatment = observed_data[event_row_index, col] / total_counts_per_treatment[col]
+        probabilities[f"Treatment_{col+1}"] = prob_event_treatment
+
+    return probabilities
+
+def plot_relative_risk_distribution(simulated_rr, observed_rr):
+    """
+    Plots the distribution of simulated relative risks with observed relative risk and confidence intervals.
+
+    Parameters:
+        simulated_rr (np.array): Array of simulated relative risks.
+        observed_rr (float): The observed relative risk.
+    """
+    # Sort the simulated results
+    simulated_rr.sort()
+    
+    # Calculate the 2.5th and 97.5th percentiles for the confidence interval
+    Mlower = simulated_rr[int(len(simulated_rr) * 0.025)]
+    Mupper = simulated_rr[int(len(simulated_rr) * 0.975)]
+
+    # Calculate the log-based lower and upper bounds
+    lowerbound = np.exp(2 * np.log(observed_rr) - np.log(Mupper))
+    upperbound = np.exp(2 * np.log(observed_rr) - np.log(Mlower))
+
+    # Plotting
+    plt.figure(figsize=(10, 6))
+    sns.histplot(simulated_rr, kde=True, color="skyblue")
+    plt.axvline(observed_rr, color="red", linestyle='dashed', linewidth=2)
+    plt.axvline(lowerbound, color="yellow", linestyle='dashed', linewidth=2)
+    plt.axvline(upperbound, color="yellow", linestyle='dashed', linewidth=2)
+    plt.title('Distribution of Simulated Relative Risks with Confidence Interval')
+    plt.xlabel('Relative Risk')
+    plt.ylabel('Frequency')
+    plt.legend(['Simulated' , 'Observed Relative Risk', 'Bound'])
+    plt.show()
+
+    print("Lower Bound:", lowerbound)
+    print("Upper Bound:", upperbound)
+
+# Example usage with simulated relative risks and an observed relative risk
+# Replace `simulated_rr` with your array of simulated relative risks
+# Replace `observed_rr` with your observed relative risk
+# plot_relative_risk_distribution(simulated_rr, observed_rr)
+
 
