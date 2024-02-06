@@ -166,13 +166,13 @@ def bootstrap_chi_abs(observed_data, num_simulations=10000, with_replacement=Tru
     return results
 
 
-def calculate_p_value_bootstrap(chi_abs_observed, simulated_chi_abs, two_tailed=False):
+def calculate_p_value_bootstrap(observed_data, simulated_data, two_tailed=False):
     """
     Calculates the p-value for the chi absolute statistic using bootstrap methods.
 
     Parameters:
-        chi_abs_observed (float): The observed chi absolute statistic.
-        simulated_chi_abs (np.array): The array of chi absolute statistics from bootstrap samples.
+        observed_data(np.array): The observed chi absolute statistic.
+        simulated_data (np.array): The array of chi absolute statistics from bootstrap samples.
         two_tailed (bool): If True, perform a two-tailed test. Defaults to False (one-tailed test).
 
     Returns:
@@ -181,11 +181,11 @@ def calculate_p_value_bootstrap(chi_abs_observed, simulated_chi_abs, two_tailed=
     try:
         if two_tailed:
             # For a two-tailed test, consider both tails of the distribution
-            tail_proportion = np.mean(simulated_chi_abs >= chi_abs_observed)
+            tail_proportion = np.mean(simulated_data >= observed_data)
             p_value = 2 * min(tail_proportion, 1 - tail_proportion)
         else:
             # For a one-tailed test, only consider the tail of interest
-            p_value = np.mean(simulated_chi_abs >= chi_abs_observed)
+            p_value = np.mean(simulated_data >= observed_data)
         
         return p_value
     except Exception as e:
