@@ -10,6 +10,55 @@ import os
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+
+##MAD FUNCTION Mean-Absolute-Deviation
+
+def mean_absolute_deviation(data):
+    """
+    Calculate the Mean Absolute Deviation (MAD) of a 1D dataset.
+
+    The function accepts either a 1D array-like, a filename of a CSV or an Excel file.
+    In case of a file, the function expects it to contain a single column of numbers.
+
+    Parameters:
+    data (array-like or str): A 1D array or list containing the dataset, or a filename.
+
+    Returns:
+    float: The Mean Absolute Deviation of the dataset.
+
+    Example:
+    >>> mean_absolute_deviation([1, 2, 3, 4, 5])
+    1.2
+
+    >>> mean_absolute_deviation('data.csv') # Assuming 'data.csv' contains a single column of numbers
+    # Returns the MAD of the numbers in 'data.csv'
+    """
+#     try:
+#         # Check if data is a filename
+#         if isinstance(data, str):
+#             if data.endswith('.csv'):
+#                 data = pd.read_csv(data).squeeze()  # Assuming a single column
+#             elif data.endswith(('.xls', '.xlsx')):
+#                 data = pd.read_excel(data).squeeze()  # Assuming a single column
+#             else:
+#                 raise ValueError("File format not supported. Please use CSV or Excel files.")
+        
+        # Calculate MAD
+#2-D array (work column by column)
+    try:
+        median = np.median(data)
+        deviations = np.abs(data - median)
+        mad = np.mean(deviations)
+        return mad
+    except Exception as e:
+        return f"An error occurred: {e}"
+
+# test_data = [15, 26, 30, 40, 55]
+# mad = mean_absolute_deviation(test_data)
+# print(mad)
+
+###############################################################################################################################
+
 def read_data(input_data):
     # Function to read data from either a file path or DataFrame
     if isinstance(input_data, pd.DataFrame):
@@ -166,12 +215,40 @@ def bootstrap_chi_abs(observed_data, num_simulations=10000, with_replacement=Tru
     return results
 
 
+# def calculate_p_value_bootstrap(observed_data, simulated_data, two_tailed=False):
+#     """
+#     Calculates the p-value for the chi absolute statistic using bootstrap methods.
+
+#     Parameters:
+#         observed_data(np.array): The observed chi absolute statistic.
+#         simulated_data (np.array): The array of chi absolute statistics from bootstrap samples.
+#         two_tailed (bool): If True, perform a two-tailed test. Defaults to False (one-tailed test).
+
+#     Returns:
+#         float: The p-value.
+#     """
+#     try:
+#         if two_tailed:
+#             # For a two-tailed test, consider both tails of the distribution
+#             tail_proportion = np.mean(simulated_data >= observed_data)
+#             p_value = 2 * min(tail_proportion, 1 - tail_proportion)
+#         else:
+#             # For a one-tailed test, only consider the tail of interest
+#             p_value = np.mean(simulated_data >= observed_data)
+        
+#         return p_value
+#     except Exception as e:
+#         logging.error("Error in calculating p-value: ", exc_info=True)
+#         return None
+
+#Updated Fuction:
 def calculate_p_value_bootstrap(observed_data, simulated_data, two_tailed=False):
     """
-    Calculates the p-value for the chi absolute statistic using bootstrap methods.
+    Calculates the p-value for the chi absolute statistic using bootstrap methods, 
+    determining first if the observed statistic lies on the left or right side of the distribution's mean.
 
     Parameters:
-        observed_data(np.array): The observed chi absolute statistic.
+        observed_data (float): The observed chi absolute statistic.
         simulated_data (np.array): The array of chi absolute statistics from bootstrap samples.
         two_tailed (bool): If True, perform a two-tailed test. Defaults to False (one-tailed test).
 
@@ -179,19 +256,30 @@ def calculate_p_value_bootstrap(observed_data, simulated_data, two_tailed=False)
         float: The p-value.
     """
     try:
+        # Determine the side of the distribution where the observed data lies
+        mean_simulated_data = np.mean(simulated_data)
+        is_right_side = observed_data > mean_simulated_data
+        
         if two_tailed:
-            # For a two-tailed test, consider both tails of the distribution
-            tail_proportion = np.mean(simulated_data >= observed_data)
-            p_value = 2 * min(tail_proportion, 1 - tail_proportion)
+            if is_right_side:
+                # For a two-tailed test, consider both tails of the distribution (right side logic)
+                tail_proportion = np.mean(simulated_data >= observed_data)
+            else:
+                # For a two-tailed test, consider both tails of the distribution (left side logic)
+                tail_proportion = np.mean(simulated_data <= observed_data)
+            p_value = tail_proportion
         else:
-            # For a one-tailed test, only consider the tail of interest
-            p_value = np.mean(simulated_data >= observed_data)
+            if is_right_side:
+                # For a one-tailed test, only consider the tail of interest (right side logic)
+                p_value = np.mean(simulated_data >= observed_data)
+            else:
+                # For a one-tailed test, only consider the tail of interest (left side logic)
+                p_value = np.mean(simulated_data <= observed_data)
         
         return p_value
     except Exception as e:
         logging.error("Error in calculating p-value: ", exc_info=True)
         return None
-
 
 
 def plot_chi_abs_distribution(simulated_data, observed_data, p_value):
@@ -219,7 +307,7 @@ def plot_chi_abs_distribution(simulated_data, observed_data, p_value):
     plt.show()
 
 
-    
+##############################################################################################################################  
     
 #CALCULATION OF RELATIVE RISK, (SIM DATA VS OBSERVED DATA) CONFIDENCE INTERVAL, PLOT GRAPH
 # Relative Risk of two treatments
@@ -296,7 +384,7 @@ def resample_and_calculate_rr(observed_data, event_row_index, reference_treatmen
 
 
 # Calculate the 95% confidence interval
-def calculate_confidence_interval(simulated_rr, percentile=95):
+def calculate_confidence_interval(simulated_rr, percentile=99):
     """
     Calculate the confidence interval for the relative risk based on the distribution of simulated relative risks.
 
@@ -375,5 +463,156 @@ def plot_relative_risk_distribution(simulated_rr, observed_rr):
 # Replace `simulated_rr` with your array of simulated relative risks
 # Replace `observed_rr` with your observed relative risk
 # plot_relative_risk_distribution(simulated_rr, observed_rr)
+
+
+###############################################################################################################################
+#Correlation Resampling 
+
+##FINAL CODE FOR CORRELATION 
+
+import numpy as np
+from scipy.stats import pearsonr
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Function to calculate the p-value based on simulated data and observed correlation
+def calculate_p_value(sims, corr_obs, two_tailed=False):
+    if corr_obs > 0:
+        if two_tailed:
+            p_value = (np.sum(sims >= corr_obs) + np.sum(sims <= -corr_obs)) / len(sims)
+        else:
+            # For one-tailed, we assume a positive relationship.
+            p_value = np.sum(sims >= corr_obs) / len(sims)
+    else:
+        if two_tailed:
+            p_value = (np.sum(sims <= corr_obs) + np.sum(sims >= -corr_obs)) / len(sims)
+        else:
+            # For one-tailed, we assume a negative relationship.
+            p_value = np.sum(sims <= corr_obs) / len(sims)
+    return p_value
+
+def plot_null_distribution(sims, corr_obs, two_tailed=False):
+    """
+    Plot the null distribution of simulated correlation coefficients and the observed correlation.
+    
+    Parameters:
+    - sims (np.array): Simulated correlation coefficients.
+    - corr_obs (float): Observed correlation coefficient.
+    - two_tailed (bool, optional): Indicates if the test is two-tailed (default is False).
+    """
+    try:
+        p = sns.displot(sims, kde=False)
+        p.set(xlabel="Pearson's Correlation Coefficient", ylabel="Count", title="Null Distribution")
+        plt.axvline(corr_obs, color='red', label=f'Observed Correlation: {corr_obs:.3f}')
+        if two_tailed:
+            plt.axvline(-corr_obs, color='red', label=f'Negative Observed Correlation: {-corr_obs:.3f}')
+        plt.legend(loc='upper right')
+        plt.show()
+    except Exception as e:
+        print(f"Error plotting null distribution: {e}")
+
+def permute_correlation(x, y, num_simulations=10000):
+    """
+    Generate simulated correlation coefficients by permuting one variable and calculating Pearson's correlation.
+    
+    Parameters:
+    - x (np.array): Values of variable 1.
+    - y (np.array): Values of variable 2.
+    - num_simulations (int, optional): Number of permutations to perform (default 10000).
+    
+    Returns:
+    - np.array: Simulated correlation coefficients.
+    """
+    try:
+        x = np.asarray(x)
+        y = np.asarray(y)
+        simulated_correlations = np.zeros(num_simulations)
+        for i in range(num_simulations):
+            permuted_x = np.random.permutation(x)
+            simulated_correlations[i] = pearsonr(permuted_x, y)[0]
+        return simulated_correlations
+    except Exception as e:
+        print(f"Error generating simulated correlations: {e}")
+        return np.array([])  # Return an empty array in case of error
+
+def compute_correlation_ci(x, y, num_simulations=10000, confidence_interval=0.95):
+    """
+    Compute the confidence interval around the observed correlation by resampling the dataset
+    and plotting the distribution of correlation coefficients from the resampled datasets with error handling.
+    
+    Parameters:
+    - x (np.array): Values of variable 1.
+    - y (np.array): Values of variable 2.
+    - num_simulations (int, optional): Number of bootstrap samples to generate (default 10000).
+    - confidence_interval (float, optional): Confidence level for the interval (default 0.95).
+    """
+    try:
+        observed_correlation = pearsonr(x, y)[0]
+        simulated_correlations = []
+        
+        for _ in range(num_simulations):
+            indices = np.random.choice(np.arange(len(x)), size=len(x), replace=True)
+            resampled_x = x[indices]
+            resampled_y = y[indices]
+            resample_correlation = pearsonr(resampled_x, resampled_y)[0]
+            simulated_correlations.append(resample_correlation)
+        
+        simulated_correlations = np.array(simulated_correlations)
+        lower_bound = np.percentile(simulated_correlations, (1 - confidence_interval) / 2 * 100)
+        upper_bound = np.percentile(simulated_correlations, (1 + confidence_interval) / 2 * 100)
+        
+        plt.figure(figsize=(10, 6))
+        sns.histplot(simulated_correlations, kde=True, color="blue", stat="density", linewidth=0)
+        plt.axvline(observed_correlation, color='red', linestyle='--', label='Observed Correlation')
+        plt.axvline(lower_bound, color='green', linestyle='-', label=f'{confidence_interval*100:.0f}% CI Lower Bound')
+        plt.axvline(upper_bound, color='green', linestyle='-', label=f'{confidence_interval*100:.0f}% CI Upper Bound')
+        plt.title('Distribution of Simulated Correlations with Confidence Interval')
+        plt.xlabel("Correlation Coefficient")
+        plt.ylabel("Density")
+        plt.legend()
+        plt.show()
+        print("Observed Correlation:", observed_correlation)
+        print(f"{confidence_interval*100:.0f}% Confidence Interval: ({lower_bound:.3f}, {upper_bound:.3f})")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
+###############################################################################################################################
+
+# 1-D Confidence Interval Calculation 
+# Additional this function also do the same job : def calculate_confidence_interval(simulated_rr, percentile=95):
+
+import numpy as np
+
+def cal_ci_onedim(data, confidence_level=99):
+    """
+    Calculate a custom confidence interval for a 1-D array based on the specified confidence level.
+    
+    Parameters:
+        data (np.array): The 1-D array of resampled values or any numeric data.
+        confidence_level (float): The confidence level expressed as a percentage. Defaults to 99.
+    
+    Returns:
+        tuple: A tuple containing the lower and upper bounds of the confidence interval.
+    """
+    # Ensure data is a numpy array for efficient operations
+    data = np.array(data)
+    
+    # Sort the data
+    data.sort()
+    
+    # Calculate the positions for the lower and upper bounds
+    total_elements = len(data)
+    lower_pos = int(((100 - confidence_level) / 2) * total_elements / 100)
+    upper_pos = int(total_elements - lower_pos - 1)  # Adjust by 1 for zero-based indexing
+    
+    # Extract the values at the calculated positions
+    lower_value = data[lower_pos]
+    upper_value = data[upper_pos]
+    
+    return lower_value, upper_value
+
+
+
 
 
