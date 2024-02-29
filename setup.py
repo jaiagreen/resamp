@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='statistics_library',
-    version='1.3',
+    version='1.4',
     author='Vishanth Hari Raj Balasubramanian',
     author_email='rbvish1007@gmail.com',
     description='A custom statistics library for chi-square analysis, resampling and other statistical functions designed for Bioscience students',
