@@ -29,7 +29,7 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
     ],
-    keywords='statistics chi-square analysis',
+    keywords='statistics, resampling chi-abs analysis',
 )
 
 
