@@ -613,6 +613,94 @@ def cal_ci_onedim(data, confidence_level=99):
     return lower_value, upper_value
 
 
+#########################################################################################################################################
+
+import numpy as np
+import pandas as pd
+from scipy.stats import linregress
+
+def bootstrap_confidence_interval(x, y, n_bootstrap=1000, confidence_level=99, return_type='both'):
+    slopes = []
+    intercepts = []
+    n = len(x)
+    alpha = 100 - confidence_level
+    percentile_lower = alpha / 2
+    percentile_upper = 100 - alpha / 2
+    
+    # Resampling and fitting
+    for i in range(n_bootstrap):
+        sample_indices = np.random.choice(range(n), size=n, replace=True)
+        x_sample = x[sample_indices]
+        y_sample = y[sample_indices]
+        
+        # Using scipy.stats.linregress
+        slope, intercept, r_value, p_value, std_err = linregress(x_sample, y_sample)
+        slopes.append(slope)
+        intercepts.append(intercept)
+    
+    # Preparing the output
+    result = {}
+    if return_type in ('slope', 'both'):
+        slope_lower_bound = np.percentile(slopes, percentile_lower)
+        slope_upper_bound = np.percentile(slopes, percentile_upper)
+        result['slope'] = (slope_lower_bound, slope_upper_bound)
+    
+    if return_type in ('intercept', 'both'):
+        intercept_lower_bound = np.percentile(intercepts, percentile_lower)
+        intercept_upper_bound = np.percentile(intercepts, percentile_upper)
+        result['intercept'] = (intercept_lower_bound, intercept_upper_bound)
+    
+    return result
+
+# Example usage
+# Assuming 'brainhead' is a DataFrame with 'Head Size' and 'Brain Weight' columns
+# brainhead = pd.read_csv('path_to_your_data.csv')
+# x = brainhead['Head Size'].values
+# y = brainhead['Brain Weight'].values
+# results = bootstrap_confidence_interval(x, y, return_type='both')  # Can be 'slope', 'intercept', or 'both'
+# print(f"Results: {results}")
+
+###############################################################################################################################
+
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+
+def plot_bootstrap_lines(x, y, n_bootstrap=1000, original_slope=2, original_intercept=0):
+    slopes = []
+    intercepts = []
+    
+    # Bootstrap resampling and linear regression fitting
+    for i in range(n_bootstrap):
+        sample_indices = np.random.choice(range(len(x)), size=len(x), replace=True)
+        x_sample = x[sample_indices]
+        y_sample = y[sample_indices]
+        model = LinearRegression().fit(x_sample.reshape(-1, 1), y_sample)
+        slopes.append(model.coef_[0])
+        intercepts.append(model.intercept_)
+    
+    # Plotting data points
+    plt.figure(figsize=(10, 6))
+    plt.scatter(x, y, alpha=0.5, label='Data Points')
+    
+    # Plotting lines for a subset of bootstrap samples
+    for i in range(min(100, len(slopes))):  # Plot lines for 100 bootstrap samples
+        y_pred = slopes[i] * x + intercepts[i]
+        plt.plot(x, y_pred, color='grey', alpha=0.2, linewidth=1)
+    
+    # Plotting original line for comparison
+    y_original = original_slope * x + original_intercept
+    plt.plot(x, y_original, color='red', label='Original Line', linewidth=2)
+    
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title('Bootstrap Regression Lines')
+    plt.legend()
+    plt.show()
+
+###################################################################################################################################
+
+
+
 
 
 
