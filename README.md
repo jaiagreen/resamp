@@ -5,7 +5,7 @@ Library for calculating Chi abs, resampling, Bootstrapping -- LS 40 @UCLA Life s
 
 Statistics Library Documentation
 Author: Vishanth Hari Raj
-GitHub Repository: https://github.com/vishanth10/statistics_library.git
+GitHub Repository: https://github.com/vishanth10/resamp
  
 Function Documentation
 1. read_data
