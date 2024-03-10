@@ -720,7 +720,7 @@ def calculate_statistic(data, stat_type='median'):
     return np.mean(data) if stat_type == 'mean' else np.median(data)
 
 def power_analysis(obs_diff, group1, group2, num_simulations=1000, alpha=0.01, power_threshold=0.8, factor_limit=10, measure='median', verbose=False):
-        """
+    """
     Perform a power analysis using resampling methods to determine the sample size required to achieve a desired power level.
     The function stops increasing the sample size once the factor limit is reached.
     
@@ -738,7 +738,7 @@ def power_analysis(obs_diff, group1, group2, num_simulations=1000, alpha=0.01, p
     Returns:
     required_sample_sizes -- a tuple of the required sample sizes for group 1 and group 2 to achieve the desired power
     achieved_power -- the power that was achieved with the returned sample sizes
-    """
+    """    
     factor = 1
     achieved_power = 0
 
