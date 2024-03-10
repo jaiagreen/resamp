@@ -29,7 +29,7 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
     ],
-    keywords='statistics, resampling chi-abs analysis',
+    keywords='resampling techniques, resample, chi-abs, power analysis, relative risk, statistics, resampling chi-abs analysis',
 )
 
 
