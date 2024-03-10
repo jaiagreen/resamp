@@ -2,7 +2,7 @@
 # __init__.py for resampling_techniques package
 statistics_library/
 ├── __init__.py
-└── statistics_library.py
+└── resamp.py
 
-from .statistics_library  import *
+from .resamp import *
 
