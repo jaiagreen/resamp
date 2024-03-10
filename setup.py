@@ -9,7 +9,7 @@ setup(
     description='A custom statistics library/ resampling technqiues for chi-abs, boostrapting analysis and other statistical functions.',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
-    url='https://github.com/vishanth10/statistics_library.git',
+    url='https://github.com/vishanth10/resamp.git',
     packages=find_packages(),
     install_requires=[
         'numpy>=1.18.5',
