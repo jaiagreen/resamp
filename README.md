@@ -1,4 +1,4 @@
-# Statistics_library
+# Resampling Techniques Library for Statistical measure
 
 Library for calculating Chi abs, resampling, Bootstrapping -- LS 40 @UCLA Life science course
 
