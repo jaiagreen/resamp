@@ -2,6 +2,16 @@
 ##FINAL SCRIPTS VERSION - 4.0 (UPDATED BOOTSRATPPING FUNCTION), OVERRIDE EXPECTED VALUE
 ## ALL MODIFICATION ACTIVE
 
+# LS 40 resampling library to complement/combine with Hypothesize
+
+### ACTIVE FINAL SCRIPT
+
+## VERSION - 1.5
+## STATUS: ALL MODIFICATION ACTIVE AND LIVE IN PYPI (PIP INSTALL STATISTICS_LIBRARY)
+## DATE: 9 MARCH 2024 
+## AUTHOR: VISHANTH HARI RAJ
+## SUPERVISOR: JANE
+
 import pandas as pd
 import numpy as np
 from scipy.stats import chi2
@@ -697,8 +707,84 @@ def plot_bootstrap_lines(x, y, n_bootstrap=1000, original_slope=2, original_inte
     plt.legend()
     plt.show()
 
+
 ###################################################################################################################################
 
+##Power Analysis
+
+import numpy as np
+
+def calculate_statistic(data, stat_type='median'):
+    """Calculate either the mean or median of the data, based on stat_type."""
+    return np.mean(data) if stat_type == 'mean' else np.median(data)
+
+def power_analysis(obs_diff, group1, group2, num_simulations=1000, alpha=0.01, power_threshold=0.8, factor_limit=10, measure='median', verbose=False):
+        """
+    Perform a power analysis using resampling methods to determine the sample size required to achieve a desired power level.
+    The function stops increasing the sample size once the factor limit is reached.
+    
+    Parameters:
+    obs_diff -- the observed difference in medians or means between the two groups, depending on 'measure'
+    group1 -- data for group 1
+    group2 -- data for group 2
+    num_simulations -- number of simulations to perform
+    alpha -- significance level
+    power_threshold -- desired power level to achieve
+    factor_limit -- the maximum factor by which to increase the sample size
+    measure -- 'median' or 'mean', the statistical measure to use for comparison
+    verbose -- if True, print intermediate results
+    
+    Returns:
+    required_sample_sizes -- a tuple of the required sample sizes for group 1 and group 2 to achieve the desired power
+    achieved_power -- the power that was achieved with the returned sample sizes
+    """
+    factor = 1
+    achieved_power = 0
+
+    while achieved_power < power_threshold and factor <= factor_limit:
+        sample_size_group1 = len(group1) * factor
+        sample_size_group2 = len(group2) * factor
+        pvals = []
+
+        for _ in range(num_simulations):
+            # Simulate resampling from each group according to the current factor
+            sim_group1 = np.random.choice(group1, sample_size_group1, replace=True)
+            sim_group2 = np.random.choice(group2, sample_size_group2, replace=True)
+            phantom_diff = calculate_statistic(sim_group1, measure) - calculate_statistic(sim_group2, measure)
+
+            # Generate the null distribution
+            pooled = np.concatenate([group1, group2])
+            null_diffs = np.zeros(num_simulations)
+            for j in range(num_simulations):
+                # Resample from the pooled data to simulate the null hypothesis
+                #null_resample = np.random.choice(pooled, sample_size_group1 + sample_size_group2, replace=True)
+                null_group1 = np.random.choice(pooled,len(sim_group1)*factor)
+                null_group2 = np.random.choice(pooled,len(sim_group1)*factor)
+                null_diffs[j] = calculate_statistic(null_group1, measure) - calculate_statistic(null_group2, measure)
+
+            # Calculate the p-value for this simulation
+            pval = (np.sum(null_diffs >= abs(phantom_diff)) + np.sum(null_diffs <= -abs(phantom_diff))) / num_simulations
+            pvals.append(pval)
+
+        # Calculate the overall power based on the simulations
+        achieved_power = np.mean(np.array(pvals) < alpha)
+        
+        if verbose:
+            print(f"Iteration with factor {factor}: Sample size group 1: {sample_size_group1}, Sample size group 2: {sample_size_group2}, Achieved power: {achieved_power}")
+
+        factor += 1
+
+    required_sample_sizes = (sample_size_group1, sample_size_group2)
+    return required_sample_sizes, achieved_power
+
+
+
+# Placeholder for actual calls with real data:
+# required_sample_sizes, achieved_power = power_analysis(
+#     obs_diff, plant_eph, plant_perm,
+#     num_simulations=1000, alpha=0.01, power_threshold=0.8, factor_limit=10,
+#     measure='mean', verbose=True
+# )
 
 
 
