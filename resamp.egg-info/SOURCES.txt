@@ -1,8 +1,0 @@
-LICENSE
-README.md
-setup.py
-resamp.egg-info/PKG-INFO
-resamp.egg-info/SOURCES.txt
-resamp.egg-info/dependency_links.txt
-resamp.egg-info/requires.txt
-resamp.egg-info/top_level.txt
