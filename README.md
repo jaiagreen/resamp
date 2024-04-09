@@ -16,7 +16,8 @@ To install `resamp.py`, run the following command in your terminal:
 ```bash
 pip install statistics_library
 ```
-Functions
+Functions:
+
 Mean Absolute Deviation (MAD)
 `mean_absolute_deviation(data)`
 Calculates the Mean Absolute Deviation of a dataset.
@@ -29,7 +30,7 @@ Calculates the Mean Absolute Deviation of a dataset.
   mad = mean_absolute_deviation([1, 2, 3, 4, 5])
   print(mad)
   ```
-Chi-Squared Test
+**Chi-Squared Test**
 `calculate_chi_squared(observed, expected)`
 Calculates the chi-squared statistic given observed and expected frequencies.
 - **Parameters**:
@@ -46,7 +47,8 @@ Generates a bootstrap distribution of the chi absolute statistic for an n*n cont
   - `with_replacement` (_bool_): Indicates whether sampling should be with replacement.
 - **Returns**:
   - _np.array_: Bootstrap distribution of chi absolute values.
-Relative Risk Analysis
+    
+**Relative Risk Analysis**
 `calculate_relative_risk_two_treatments(observed_data, event_row_index, treatment1_index, treatment2_index)`
 Calculates the relative risk of an event between two treatments.
 - **Parameters**:
@@ -56,7 +58,8 @@ Calculates the relative risk of an event between two treatments.
   - `treatment2_index` (_int_): Column index for the second treatment.
 - **Returns**:
   - _float_: The relative risk.
-Correlation Analysis
+  - 
+**Correlation Analysis**
 `permute_correlation(x, y, num_simulations=10000)`
 Generates simulated correlation coefficients by permuting one variable.
 - **Parameters**:
@@ -65,7 +68,8 @@ Generates simulated correlation coefficients by permuting one variable.
   - `num_simulations` (_int_): Number of permutations.
 - **Returns**:
   - _np.array_: Simulated correlation coefficients.
-Linear Regression Analysis
+    
+**Linear Regression Analysis**
 `bootstrap_confidence_interval(x, y, n_bootstrap=1000, confidence_level=99, return_type='both')`
 Calculates bootstrap confidence intervals for the slope and intercept of a linear regression model.
 - **Parameters**:
@@ -75,7 +79,8 @@ Calculates bootstrap confidence intervals for the slope and intercept of a linea
   - `return_type` (_str_): Determines if the output is for 'slope', 'intercept', or 'both'.
 - **Returns**:
   - _dict_: Confidence intervals for the slope and/or intercept.
-Power Analysis
+
+**Power Analysis**
 `power_analysis(...)`
 Performs a power analysis to determine the required sample size for achieving a specified power level.
 - **Parameters**:
