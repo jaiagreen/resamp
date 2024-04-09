@@ -97,6 +97,13 @@ Performs a power analysis to determine the required sample size for achieving a 
   - `required_sample_sizes`: a tuple of the required sample sizes for group 1 and group 2 to achieve the desired power.
   - `achieved_power`: the power that was achieved with the returned sample sizes.
 
+### Usage Example for `power_analysis`
+```python
+group1 = np.random.normal(5, 2, 100)
+group2 = np.random.normal(5.5, 2, 100)
+sample_sizes, achieved_power = power_analysis(obs_diff=0.5, group1=group1, group2=group2, alpha=0.05, power_threshold=0.8)
+print(f'Required Sample Sizes: {sample_sizes}, Achieved Power: {achieved_power}')
+```
 
 **#Function Usage**
 
@@ -189,8 +196,6 @@ group2 = np.random.normal(5.5, 2, 100)
 sample_sizes, achieved_power = power_analysis(obs_diff=0.5, group1=group1, group2=group2, alpha=0.05, power_threshold=0.8)
 print(f'Required Sample Sizes: {sample_sizes}, Achieved Power: {achieved_power}')
 ```
-![image](https://github.com/vishanth10/resamp/assets/38405533/ae7e8074-c9fc-4f95-98d4-ebc2d061fadb)
-
 
 Additional Notes
 This documentation includes examples and explanations for key functions. Users are encouraged to refer to the inline comments within the `resamp.py` script for more detailed information on specific parameters and functionality. For complex statistical analyses, users should ensure their input data is correctly formatted and understand the statistical principles underlying their analyses.
