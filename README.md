@@ -91,17 +91,12 @@ Performs a power analysis to determine the required sample size for achieving a 
 - **Returns**:
   - `required_sample_sizes`: a tuple of the required sample sizes for group 1 and group 2 to achieve the desired power.
   - `achieved_power`: the power that was achieved with the returned sample sizes.
+
+
 Additional Notes
 This documentation includes examples and explanations for key functions. Users are encouraged to refer to the inline comments within the `resamp.py` script for more detailed information on specific parameters and functionality. For complex statistical analyses, users should ensure their input data is correctly formatted and understand the statistical principles underlying their analyses.
 Contact
 For further assistance or to report issues, please contact the author, Vishanth Hari Raj, or the supervisor, Jane.
-![image](https://github.com/vishanth10/resamp/assets/38405533/5542ba88-07a7-461a-881c-4528e3444786)
-
-
-
-
-
-
 
 
 
