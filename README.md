@@ -2,10 +2,10 @@
 
 Library for resampling methods over Chi-Abs, correlation, power analysis, linear regression (beta value), relative risk -- LS 40 @UCLA Life science course
 
+RESAMP Library Documentation
 
-Statistics Library Documentation
-Author: Vishanth Hari Raj
-GitHub Repository: https://github.com/vishanth10/resamp
+- Author: Vishanth Hari Raj
+- GitHub Repository: https://github.com/vishanth10/resamp
 
 
 `resamp.py` Version 1.5 Documentation
