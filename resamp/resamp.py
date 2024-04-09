@@ -545,17 +545,19 @@ def compute_correlation_ci(x, y, num_simulations=10000, confidence_interval=0.95
 # 1-Sample Tests
 import numpy as np
 
-def resample_one_group_count(box, sample_stat, count_what="A", two_tailed=False, sims=10000, proportion=False, return_resamples=False):
+def resample_one_group_count(box, sample_stat, sample_size, count_what="A", two_tailed=True, sims=10000, proportion=False, return_resamples=False):
     """
     Calculate a p-value for a count or proportion. Used to compare a sample to a population/base rate.
     
     Parameters:
         box (np array or list): Box model representing population
         sample_stat (float): Statistic for the sample
+        sample_size (int): Number of individuals (or sites, etc.) in sample
         count_what (char): What character in the box model should be counted. Default "A".
+        two_tailed (bool): Whether to compute a two-tailed p-value. If False, do one-tailed.
         sims (int): How many simulations to run. Default 10,000
-        proportion (boolean): Calculate count or proportion (default count)
-        tails (int): One or two tails
+        proportion (bool): Calculate count or proportion (default count)
+        return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
     
     Returns:
         p-value
@@ -567,7 +569,7 @@ def resample_one_group_count(box, sample_stat, count_what="A", two_tailed=False,
     #Resampling loop
     resampleArr = np.zeros(sims)  #Preallocates array to store resampling results
     for i in range(sims):
-        p_sample = np.random.choice(box, len(box), replace=True)  #Samples from the box model (with replacement)
+        p_sample = np.random.choice(box, sample_size, replace=True)  #Samples from the box model (with replacement)
         p_count = np.sum(p_sample == count_what)
         resampleArr[i] = p_count
     
@@ -585,7 +587,7 @@ def resample_one_group_count(box, sample_stat, count_what="A", two_tailed=False,
         return p
 
 
-    
+
 # Additional this function also do the same job : def calculate_confidence_interval(simulated_rr, percentile=95):
 def cal_ci_one_sample(data, confidence_level=99):
     """
