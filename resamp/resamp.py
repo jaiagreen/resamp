@@ -1,17 +1,13 @@
-### ACTIVE FINAL SCRIPT
-##FINAL SCRIPTS VERSION - 4.0 (UPDATED BOOTSRATPPING FUNCTION), OVERRIDE EXPECTED VALUE
-## ALL MODIFICATION ACTIVE
-
 # LS 40 resampling library to complement/combine with Hypothesize
 
 ### ACTIVE FINAL SCRIPT
 
-## NAME: resamp.py
-## VERSION - 1.5
+## VERSION - 1.6.4
 ## STATUS: ALL MODIFICATION ACTIVE AND LIVE IN PYPI (PIP INSTALL STATISTICS_LIBRARY)
-## DATE: 9 MARCH 2024 
+## DATE: 9 APRIL 2024 
 ## AUTHOR: VISHANTH HARI RAJ
-## SUPERVISOR: JANE
+## SUPERVISOR: JANE SHEVTSOV
+
 
 import pandas as pd
 import numpy as np
@@ -22,11 +18,11 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-##MAD FUNCTION Mean-Absolute-Deviation
+##MAD FUNCTION Median Absolute Deviation
 
-def mean_absolute_deviation(data):
+def median_absolute_deviation(data):
     """
-    Calculate the Mean Absolute Deviation (MAD) of a 1D dataset.
+    Calculate the Median Absolute Deviation (MAD) of a 1D dataset.
 
     The function accepts either a 1D array-like, a filename of a CSV or an Excel file.
     In case of a file, the function expects it to contain a single column of numbers.
@@ -35,37 +31,27 @@ def mean_absolute_deviation(data):
     data (array-like or str): A 1D array or list containing the dataset, or a filename.
 
     Returns:
-    float: The Mean Absolute Deviation of the dataset.
+    float: The Median Absolute Deviation of the dataset.
 
     Example:
-    >>> mean_absolute_deviation([1, 2, 3, 4, 5])
+    >>> median_absolute_deviation([1, 2, 3, 4, 5])
     1.2
 
-    >>> mean_absolute_deviation('data.csv') # Assuming 'data.csv' contains a single column of numbers
+    >>> median_absolute_deviation('data.csv') # Assuming 'data.csv' contains a single column of numbers
     # Returns the MAD of the numbers in 'data.csv'
     """
-#     try:
-#         # Check if data is a filename
-#         if isinstance(data, str):
-#             if data.endswith('.csv'):
-#                 data = pd.read_csv(data).squeeze()  # Assuming a single column
-#             elif data.endswith(('.xls', '.xlsx')):
-#                 data = pd.read_excel(data).squeeze()  # Assuming a single column
-#             else:
-#                 raise ValueError("File format not supported. Please use CSV or Excel files.")
-        
-        # Calculate MAD
-#2-D array (work column by column)
+    # Calculate MAD
+    #2-D array (work column by column)
     try:
         median = np.median(data)
         deviations = np.abs(data - median)
-        mad = np.mean(deviations)
+        mad = np.median(deviations)
         return mad
     except Exception as e:
         return f"An error occurred: {e}"
 
 # test_data = [15, 26, 30, 40, 55]
-# mad = mean_absolute_deviation(test_data)
+# mad = median_absolute_deviation(test_data)
 # print(mad)
 
 ###############################################################################################################################
@@ -136,40 +122,6 @@ def chi_abs_stat(observed_data, expected_data=None):
         return None
 
 
-def calculate_p_value(chi_squared, dof):
-    p_value = chi2.sf(chi_squared, dof)
-    return p_value
-
-
-def chi_squared_stat(observed_data, expected_data):
-    try:
-        observed = read_data(observed_data)
-        expected = read_data(expected_data)
-        compare_dimensions(observed, expected)
-        chi_squared = calculate_chi_squared(observed, expected)
-        return chi_squared
-    except Exception as e:
-        logging.error("Error calculating chi-squared: ", exc_info=True)
-        return None
-
-
-def p_value_stat(observed_data, expected_data):
-    try:
-        observed = read_data(observed_data)
-        expected = read_data(expected_data)
-        compare_dimensions(observed, expected)
-        chi_squared = calculate_chi_squared(observed, expected)
-        dof = (observed.shape[0] - 1) * (observed.shape[1] - 1)
-        return calculate_p_value(chi_squared, dof)
-    except Exception as e:
-        logging.error("Error calculating p-value: ", exc_info=True)
-        return None
-
-
-# Example usage (assuming observed_data and expected_data are numpy arrays):
-# p_value_mean_ratio = calculate_p_value_mean_ratio(observed_data, expected_data, num_simulations=1000, with_replacement=True, sample_size=None)
-# print(f"P-value (Mean Ratio): {p_value_mean_ratio}")
-        
 
 def convert_df_to_numpy(df_observed, df_expected):
     """
@@ -394,7 +346,7 @@ def resample_and_calculate_rr(observed_data, event_row_index, reference_treatmen
     return simulated_rr
 
 
-# Calculate the 95% confidence interval
+# Calculate the 99% confidence interval
 def calculate_confidence_interval(simulated_rr, percentile=99):
     """
     Calculate the confidence interval for the relative risk based on the distribution of simulated relative risks.
@@ -590,12 +542,52 @@ def compute_correlation_ci(x, y, num_simulations=10000, confidence_interval=0.95
 
 ###############################################################################################################################
 
-# 1-D Confidence Interval Calculation 
-# Additional this function also do the same job : def calculate_confidence_interval(simulated_rr, percentile=95):
-
+# 1-Sample Tests
 import numpy as np
 
-def cal_ci_onedim(data, confidence_level=99):
+def resample_one_group_count(box, sample_stat, count_what="A", two_tailed=False, sims=10000, proportion=False, return_resamples=False):
+    """
+    Calculate a p-value for a count or proportion. Used to compare a sample to a population/base rate.
+    
+    Parameters:
+        box (np array or list): Box model representing population
+        sample_stat (float): Statistic for the sample
+        count_what (char): What character in the box model should be counted. Default "A".
+        sims (int): How many simulations to run. Default 10,000
+        proportion (boolean): Calculate count or proportion (default count)
+        tails (int): One or two tails
+    
+    Returns:
+        p-value
+        resampling data (if desired)
+    """
+
+    dataArr = np.array(box)  #Converts box model to NumPy array
+
+    #Resampling loop
+    resampleArr = np.zeros(sims)  #Preallocates array to store resampling results
+    for i in range(sims):
+        p_sample = np.random.choice(box, len(box), replace=True)  #Samples from the box model (with replacement)
+        p_count = np.sum(p_sample == count_what)
+        resampleArr[i] = p_count
+    
+    #Compute p-value
+    if proportion == False:
+        observed = np.sum(dataArr == count_what)
+    else:
+        observed = np.mean(dataArr == count_what)
+    p = calculate_p_value_bootstrap(observed_data = sample_stat, simulated_data = resampleArr, two_tailed=two_tailed)
+    
+    #Return results
+    if return_resamples:
+        return p, resampleArr
+    else:
+        return p
+
+
+    
+# Additional this function also do the same job : def calculate_confidence_interval(simulated_rr, percentile=95):
+def cal_ci_one_sample(data, confidence_level=99):
     """
     Calculate a custom confidence interval for a 1-D array based on the specified confidence level.
     
@@ -625,6 +617,9 @@ def cal_ci_onedim(data, confidence_level=99):
 
 
 #########################################################################################################################################
+
+#Linear regression, slope/intercept resampling and finding confidence interval
+
 
 import numpy as np
 import pandas as pd
@@ -708,7 +703,6 @@ def plot_bootstrap_lines(x, y, n_bootstrap=1000, original_slope=2, original_inte
     plt.legend()
     plt.show()
 
-
 ###################################################################################################################################
 
 ##Power Analysis
@@ -723,7 +717,7 @@ def power_analysis(obs_diff, group1, group2, num_simulations=1000, alpha=0.01, p
     """
     Perform a power analysis using resampling methods to determine the sample size required to achieve a desired power level.
     The function stops increasing the sample size once the factor limit is reached.
-    
+
     Parameters:
     obs_diff -- the observed difference in medians or means between the two groups, depending on 'measure'
     group1 -- data for group 1
@@ -734,11 +728,12 @@ def power_analysis(obs_diff, group1, group2, num_simulations=1000, alpha=0.01, p
     factor_limit -- the maximum factor by which to increase the sample size
     measure -- 'median' or 'mean', the statistical measure to use for comparison
     verbose -- if True, print intermediate results
-    
+
     Returns:
     required_sample_sizes -- a tuple of the required sample sizes for group 1 and group 2 to achieve the desired power
     achieved_power -- the power that was achieved with the returned sample sizes
-    """    
+    """
+
     factor = 1
     achieved_power = 0
 
@@ -769,7 +764,7 @@ def power_analysis(obs_diff, group1, group2, num_simulations=1000, alpha=0.01, p
 
         # Calculate the overall power based on the simulations
         achieved_power = np.mean(np.array(pvals) < alpha)
-        
+
         if verbose:
             print(f"Iteration with factor {factor}: Sample size group 1: {sample_size_group1}, Sample size group 2: {sample_size_group2}, Achieved power: {achieved_power}")
 
@@ -777,17 +772,3 @@ def power_analysis(obs_diff, group1, group2, num_simulations=1000, alpha=0.01, p
 
     required_sample_sizes = (sample_size_group1, sample_size_group2)
     return required_sample_sizes, achieved_power
-
-
-
-# Placeholder for actual calls with real data:
-# required_sample_sizes, achieved_power = power_analysis(
-#     obs_diff, plant_eph, plant_perm,
-#     num_simulations=1000, alpha=0.01, power_threshold=0.8, factor_limit=10,
-#     measure='mean', verbose=True
-# )
-
-
-
-
-
