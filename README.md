@@ -8,7 +8,7 @@ RESAMP Library Documentation
 - GitHub Repository: https://github.com/vishanth10/resamp
 
 
-`resamp.py` Version 1.5 Documentation
+`resamp.py` Version 1.6.4 Documentation
 Overview
 `resamp.py` is a comprehensive Python library designed for statistical analysis and resampling techniques. This document serves as a guide for utilizing the library's functions, including statistical tests, data analysis, and visualization tools.
 Installation
@@ -18,16 +18,16 @@ pip install statistics_library
 ```
 Functions:
 
-Mean Absolute Deviation (MAD)
-`mean_absolute_deviation(data)`
-Calculates the Mean Absolute Deviation of a dataset.
+Median Absolute Deviation (MAD)
+`median_absolute_deviation(data)`
+Calculates the Median Absolute Deviation of a dataset.
 - **Parameters**:
   - `data` (_array-like or str_): A 1D array or list containing the dataset, or a filename pointing to a CSV or Excel file containing a single column of numbers.
 - **Returns**:
-  - _float_: The Mean Absolute Deviation of the dataset.
+  - _float_: The Median Absolute Deviation of the dataset.
 - **Usage Example**:
   ```python
-  mad = mean_absolute_deviation([1, 2, 3, 4, 5])
+  mad = median_absolute_deviation([1, 2, 3, 4, 5])
   print(mad)
   ```
 **Chi-Squared Test**
