@@ -1,11 +1,113 @@
 # Resampling Techniques Library for Statistical measure
 
-Library for calculating Chi abs, resampling, Bootstrapping -- LS 40 @UCLA Life science course
+Library for resampling methods over Chi-Abs, correlation, power analysis, linear regression (beta value), relative risk -- LS 40 @UCLA Life science course
 
 
 Statistics Library Documentation
 Author: Vishanth Hari Raj
 GitHub Repository: https://github.com/vishanth10/resamp
+
+
+`resamp.py` Version 1.5 Documentation
+Overview
+`resamp.py` is a comprehensive Python library designed for statistical analysis and resampling techniques. This document serves as a guide for utilizing the library's functions, including statistical tests, data analysis, and visualization tools.
+Installation
+To install `resamp.py`, run the following command in your terminal:
+```bash
+pip install statistics_library
+```
+Functions
+Mean Absolute Deviation (MAD)
+`mean_absolute_deviation(data)`
+Calculates the Mean Absolute Deviation of a dataset.
+- **Parameters**:
+  - `data` (_array-like or str_): A 1D array or list containing the dataset, or a filename pointing to a CSV or Excel file containing a single column of numbers.
+- **Returns**:
+  - _float_: The Mean Absolute Deviation of the dataset.
+- **Usage Example**:
+  ```python
+  mad = mean_absolute_deviation([1, 2, 3, 4, 5])
+  print(mad)
+  ```
+Chi-Squared Test
+`calculate_chi_squared(observed, expected)`
+Calculates the chi-squared statistic given observed and expected frequencies.
+- **Parameters**:
+  - `observed` (_DataFrame_): Observed frequencies.
+  - `expected` (_DataFrame_): Expected frequencies.
+- **Returns**:
+  - _float_: The chi-squared statistic.
+Bootstrap Chi Absolute
+`bootstrap_chi_abs(observed_data, num_simulations=10000, with_replacement=True)`
+Generates a bootstrap distribution of the chi absolute statistic for an n*n contingency table.
+- **Parameters**:
+  - `observed_data` (_np.array or pd.DataFrame_): Contingency table with observed frequencies.
+  - `num_simulations` (_int_): Number of bootstrap samples to generate.
+  - `with_replacement` (_bool_): Indicates whether sampling should be with replacement.
+- **Returns**:
+  - _np.array_: Bootstrap distribution of chi absolute values.
+Relative Risk Analysis
+`calculate_relative_risk_two_treatments(observed_data, event_row_index, treatment1_index, treatment2_index)`
+Calculates the relative risk of an event between two treatments.
+- **Parameters**:
+  - `observed_data` (_np.array_): The observed data as a 2D array.
+  - `event_row_index` (_int_): Row index for the event.
+  - `treatment1_index` (_int_): Column index for the first treatment.
+  - `treatment2_index` (_int_): Column index for the second treatment.
+- **Returns**:
+  - _float_: The relative risk.
+Correlation Analysis
+`permute_correlation(x, y, num_simulations=10000)`
+Generates simulated correlation coefficients by permuting one variable.
+- **Parameters**:
+  - `x` (_np.array_): Values of variable 1.
+  - `y` (_np.array_): Values of variable 2.
+  - `num_simulations` (_int_): Number of permutations.
+- **Returns**:
+  - _np.array_: Simulated correlation coefficients.
+Linear Regression Analysis
+`bootstrap_confidence_interval(x, y, n_bootstrap=1000, confidence_level=99, return_type='both')`
+Calculates bootstrap confidence intervals for the slope and intercept of a linear regression model.
+- **Parameters**:
+  - `x`, `y` (_np.array_): Predictor and response variables.
+  - `n_bootstrap` (_int_): Number of bootstrap samples.
+  - `confidence_level` (_float_): Confidence level for the interval.
+  - `return_type` (_str_): Determines if the output is for 'slope', 'intercept', or 'both'.
+- **Returns**:
+  - _dict_: Confidence intervals for the slope and/or intercept.
+Power Analysis
+`power_analysis(...)`
+Performs a power analysis to determine the required sample size for achieving a specified power level.
+- **Parameters**:
+  - `obs_diff`: the observed difference in medians or means between the two groups, depending on 'measure'.
+  - `group1`: data for group 1.
+  - `group2`: data for group 2.
+  - `num_simulations`: number of simulations to perform.
+  - `alpha`: significance level.
+  - `power_threshold`: desired power level to achieve.
+  - `factor_limit`: the maximum factor by which to increase the sample size.
+  - `measure`: 'median' or 'mean', the statistical measure to use for comparison.
+  - `verbose`: if True, print intermediate results.
+- **Returns**:
+  - `required_sample_sizes`: a tuple of the required sample sizes for group 1 and group 2 to achieve the desired power.
+  - `achieved_power`: the power that was achieved with the returned sample sizes.
+Additional Notes
+This documentation includes examples and explanations for key functions. Users are encouraged to refer to the inline comments within the `resamp.py` script for more detailed information on specific parameters and functionality. For complex statistical analyses, users should ensure their input data is correctly formatted and understand the statistical principles underlying their analyses.
+Contact
+For further assistance or to report issues, please contact the author, Vishanth Hari Raj, or the supervisor, Jane.
+![image](https://github.com/vishanth10/resamp/assets/38405533/5542ba88-07a7-461a-881c-4528e3444786)
+
+
+
+
+
+
+
+
+
+ANNEXURE I
+
+
  
 Function Documentation
 1. read_data
@@ -135,7 +237,7 @@ Usage Example:
 plot_relative_risk_distribution(simulated_rr, observed_rr)
 
 
-APPENDIX - I
+APPENDIX - II
 
 bootstrap_chi_abs_distribution :
 The bootstrap_chi_abs_distribution function is designed for generating a bootstrap distribution of the chi absolute statistic for an n*n contingency table. This is crucial in statistical analysis, especially when assessing the significance of observed frequencies against expected frequencies in categorical data.
@@ -157,6 +259,6 @@ This function is used in statistical hypothesis testing to assess the significan
 
 
 
-APPENDIX II
+APPENDIX III
  
 
