@@ -98,6 +98,100 @@ Performs a power analysis to determine the required sample size for achieving a 
   - `achieved_power`: the power that was achieved with the returned sample sizes.
 
 
+**#Function Usage**
+
+```python
+def mean_absolute_deviation(data):
+    # Your implementation here
+```
+Calculates the mean absolute deviation of the provided dataset. Supports direct list input or file paths.
+```python
+def calculate_chi_squared(observed, expected):
+    # Your implementation here
+```
+Calculates the chi-squared statistic based on observed and expected frequencies.
+```python
+def calculate_expected(observed):
+    # Your implementation here
+```
+Calculates expected frequencies for a chi-squared test from observed data.
+```python
+def bootstrap_chi_abs(observed_data, num_simulations=10000, with_replacement=True):
+    # Your implementation here
+```
+Generates bootstrap samples for chi absolute statistics and calculates the chi absolute statistic for each sample.
+```python
+def calculate_relative_risk_two_treatments(observed_data, event_row_index, treatment1_index, treatment2_index):
+    # Your implementation here
+```
+Calculates the relative risk between two treatments.
+```python
+def permute_correlation(x, y, num_simulations=10000):
+    # Your implementation here
+```
+Performs permutation tests to calculate the null distribution of the correlation coefficient.
+```python
+def bootstrap_confidence_interval(x, y, n_bootstrap=1000, confidence_level=99, return_type='both'):
+    # Your implementation here
+```
+Calculates bootstrap confidence intervals for linear regression parameters.
+```python
+def plot_bootstrap_lines(x, y, n_bootstrap=1000, original_slope=2, original_intercept=0):
+    # Your implementation here
+```
+Plots regression lines for bootstrap samples and compares them with the original regression line.
+```python
+def power_analysis(...):
+    # Your implementation here
+```
+Performs a power analysis to determine the required sample sizes for achieving a specified power level.
+### Usage Example for `mean_absolute_deviation`
+```python
+mad = mean_absolute_deviation([1, 2, 3, 4, 5])
+print(f'Mean Absolute Deviation: {mad}')
+```
+### Usage Example for `calculate_chi_squared` and `calculate_expected`
+```python
+observed = np.array([[10, 10, 20], [20, 20, 10]])
+expected = calculate_expected(observed)
+chi_squared = calculate_chi_squared(observed, expected)
+print(f'Chi-Squared Statistic: {chi_squared}')
+```
+### Usage Example for `bootstrap_chi_abs`
+```python
+bootstrap_results = bootstrap_chi_abs(observed_data, num_simulations=1000)
+print('Bootstrap Chi Absolute Results:', bootstrap_results[:5])
+```
+### Usage Example for `calculate_relative_risk_two_treatments`
+```python
+relative_risk = calculate_relative_risk_two_treatments(observed_data, 0, 1, 2)
+print(f'Relative Risk: {relative_risk}')
+```
+### Usage Example for `permute_correlation`
+```python
+x = np.random.rand(100)
+y = 2 * x + np.random.normal(0, 1, 100)
+simulated_correlations = permute_correlation(x, y, 10000)
+print('Simulated Correlation Coefficients:', simulated_correlations[:5])
+```
+### Usage Example for `bootstrap_confidence_interval` and `plot_bootstrap_lines`
+```python
+x = np.random.rand(100)
+y = 2 * x + np.random.normal(0, 1, 100)
+confidence_interval = bootstrap_confidence_interval(x, y, 1000, 95, 'slope')
+print(f'Confidence Interval for Slope: {confidence_interval}')
+plot_bootstrap_lines(x, y)
+```
+### Usage Example for `power_analysis`
+```python
+group1 = np.random.normal(5, 2, 100)
+group2 = np.random.normal(5.5, 2, 100)
+sample_sizes, achieved_power = power_analysis(obs_diff=0.5, group1=group1, group2=group2, alpha=0.05, power_threshold=0.8)
+print(f'Required Sample Sizes: {sample_sizes}, Achieved Power: {achieved_power}')
+```
+![image](https://github.com/vishanth10/resamp/assets/38405533/ae7e8074-c9fc-4f95-98d4-ebc2d061fadb)
+
+
 Additional Notes
 This documentation includes examples and explanations for key functions. Users are encouraged to refer to the inline comments within the `resamp.py` script for more detailed information on specific parameters and functionality. For complex statistical analyses, users should ensure their input data is correctly formatted and understand the statistical principles underlying their analyses.
 Contact
