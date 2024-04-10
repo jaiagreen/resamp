@@ -15,8 +15,6 @@ from .resamp import (
     calculate_chi_abs,
     chi_abs_stat,
     calculate_p_value,
-    chi_squared_stat,
-    p_value_stat,
     convert_df_to_numpy,
     bootstrap_chi_abs,
     calculate_p_value_bootstrap,
@@ -39,7 +37,7 @@ from .resamp import (
 )
 
 __all__ = [
-    "mean_absolute_deviation",
+    "median_absolute_deviation",
     "read_data",
     "compare_dimensions",
     "calculate_chi_squared",
@@ -47,7 +45,6 @@ __all__ = [
     "calculate_chi_abs",
     "chi_abs_stat",
     "calculate_p_value",
-    "chi_squared_stat",
     "p_value_stat",
     "convert_df_to_numpy",
     "bootstrap_chi_abs",
@@ -62,6 +59,7 @@ __all__ = [
     "plot_null_distribution",
     "permute_correlation",
     "compute_correlation_ci",
+    "resample_one_group_count",
     "cal_ci_onedim",
     "bootstrap_confidence_interval",
     "plot_bootstrap_lines",
