@@ -7,7 +7,7 @@
 # from .resamp import *
 
 from .resamp import (
-    mean_absolute_deviation,
+    median_absolute_deviation,
     read_data,
     compare_dimensions,
     calculate_chi_squared,
@@ -30,6 +30,7 @@ from .resamp import (
     plot_null_distribution,
     permute_correlation,
     compute_correlation_ci,
+    resample_one_group_count
     cal_ci_onedim,
     bootstrap_confidence_interval,
     plot_bootstrap_lines,
