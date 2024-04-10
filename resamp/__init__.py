@@ -30,7 +30,7 @@ from .resamp import (
     plot_null_distribution,
     permute_correlation,
     compute_correlation_ci,
-    resample_one_group_count
+    resample_one_group_count,
     cal_ci_onedim,
     bootstrap_confidence_interval,
     plot_bootstrap_lines,
