@@ -589,7 +589,7 @@ def resample_one_group_count(box, sample_stat, sample_size, count_what="A", two_
         return p
 
 
-def confidence_interval_count(box, sample_size, confidence_level=99, count_what="A", sims=10000, proportion=False, return_resamples=False):
+def confidence_interval_count(box, sample_size, confidence_level=99, count_what="A", sims=10000, pivotal=True, proportion=False, return_resamples=False):
     """
     Calculate percentile confidence interval for a count or proportion.
     
@@ -599,6 +599,7 @@ def confidence_interval_count(box, sample_size, confidence_level=99, count_what=
         confidence_level (float): The level of confidence interval you want (95%, 99%, etc.) This needs to be a number between 0 and 100.
         count_what (char): What character in the box model should be counted. Default "A".
         sims (int): How many simulations to run. Default 10,000
+        pivotal (bool): Whether to compute a pivotal confidence interval (default True). If False, percentile will be used.
         proportion (bool): Calculate count or proportion (default count)
         return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
     
@@ -608,6 +609,10 @@ def confidence_interval_count(box, sample_size, confidence_level=99, count_what=
     """
     
     dataArr = np.array(box)  #Converts box model to NumPy array
+    if pivotal==True and proportion==False:
+        Mobs = np.sum(dataArr==count_what)
+    elif pivotal==True and proportion==True:
+        Mobs = np.mean(dataArr==count_what)
 
     #Resampling loop
     resampleArr = np.zeros(sims)
@@ -615,20 +620,28 @@ def confidence_interval_count(box, sample_size, confidence_level=99, count_what=
         p_sample = np.random.choice(dataArr, sample_size, replace=True)  #Samples from the box model (with replacement)
         p_count = np.sum(p_sample == count_what)
         resampleArr[i] = p_count
-        
+   
     #Convert to proportions if desired
     if proportion:
         resampleArr = resampleArr/sample_size
     
     #Compute confidence interval
-    CI = np.percentile(resampleArr, [100-confidence_level, confidence_level])
-    
+    CIpercentile = np.percentile(resampleArr, sorted([(100-confidence_level)/2, confidence_level/2]))
+    if pivotal:
+        CIpivotal = np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
+        CI = CIpivotal
+    else:
+        CI = CIpercentile
+      
     #Return results
     if return_resamples:
         return CI, resampleArr
     else:
         return CI
-    
+
+
+def CI_percentile_to_pivotal(Mobs, CIpercentile):
+    return np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
 
 
 # Additional this function also do the same job : def calculate_confidence_interval(simulated_rr, percentile=95):
