@@ -8,7 +8,7 @@ RESAMP Library Documentation
 - GitHub Repository: https://github.com/vishanth10/resamp
 
 
-`resamp.py` Version 1.6.4 Documentation
+`resamp.py` Version 1.6.8 Documentation
 Overview
 `resamp.py` is a comprehensive Python library designed for statistical analysis and resampling techniques. This document serves as a guide for utilizing the library's functions, including statistical tests, data analysis, and visualization tools.
 Installation
