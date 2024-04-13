@@ -2,9 +2,8 @@
 
 ### ACTIVE FINAL SCRIPT
 
-## VERSION - 1.6.4
-## STATUS: ALL MODIFICATION ACTIVE AND LIVE IN PYPI (PIP INSTALL STATISTICS_LIBRARY)
-## DATE: 9 APRIL 2024 
+## VERSION - 1.6.8
+## DATE: 10 APRIL 2024 
 ## AUTHOR: VISHANTH HARI RAJ
 ## SUPERVISOR: JANE SHEVTSOV
 
@@ -79,7 +78,7 @@ def calculate_chi_squared(observed, expected):
     chi_squared = ((observed - expected) ** 2 / expected).sum().sum()
     return chi_squared
 
-# #Calculating the expected Value 
+#Calculating the expected Value 
 def calculate_expected(observed):
     row_sums = observed.sum(axis=1)
     col_sums = observed.sum(axis=0)
@@ -454,6 +453,7 @@ def calculate_p_value(sims, corr_obs, two_tailed=False):
             p_value = np.sum(sims <= corr_obs) / len(sims)
     return p_value
 
+
 def plot_null_distribution(sims, corr_obs, two_tailed=False):
     """
     Plot the null distribution of simulated correlation coefficients and the observed correlation.
@@ -473,6 +473,7 @@ def plot_null_distribution(sims, corr_obs, two_tailed=False):
         plt.show()
     except Exception as e:
         print(f"Error plotting null distribution: {e}")
+
 
 def permute_correlation(x, y, num_simulations=10000):
     """
@@ -497,6 +498,7 @@ def permute_correlation(x, y, num_simulations=10000):
     except Exception as e:
         print(f"Error generating simulated correlations: {e}")
         return np.array([])  # Return an empty array in case of error
+
 
 def compute_correlation_ci(x, y, num_simulations=10000, confidence_interval=0.95):
     """
@@ -569,7 +571,7 @@ def resample_one_group_count(box, sample_stat, sample_size, count_what="A", two_
     #Resampling loop
     resampleArr = np.zeros(sims)  #Preallocates array to store resampling results
     for i in range(sims):
-        p_sample = np.random.choice(box, sample_size, replace=True)  #Samples from the box model (with replacement)
+        p_sample = np.random.choice(dataArr, sample_size, replace=True)  #Samples from the box model (with replacement)
         p_count = np.sum(p_sample == count_what)
         resampleArr[i] = p_count
     
@@ -586,6 +588,61 @@ def resample_one_group_count(box, sample_stat, sample_size, count_what="A", two_
     else:
         return p
 
+
+def confidence_interval_count(box, sample_size, confidence_level=99, count_what="A", sims=10000, pivotal=True, proportion=False, return_resamples=False):
+    """
+    Calculate percentile confidence interval for a count or proportion.
+    
+    Parameters:
+        box (np array or list): Box model representing population
+        sample_size (int): Number of individuals (or sites, etc.) in sample
+        confidence_level (float): The level of confidence interval you want (95%, 99%, etc.) This needs to be a number between 0 and 100.
+        count_what (char): What character in the box model should be counted. Default "A".
+        sims (int): How many simulations to run. Default 10,000
+        pivotal (bool): Whether to compute a pivotal confidence interval (default True). If False, percentile will be used.
+        proportion (bool): Calculate count or proportion (default count)
+        return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
+    
+    Returns:
+        confidence interval (as numpy array)
+        resampling data (if desired)
+    """
+    
+    dataArr = np.array(box)  #Converts box model to NumPy array
+    
+    if pivotal==True and proportion==False:  #Percentile CIs don't use Mobs
+        Mobs = np.sum(dataArr==count_what)
+    elif pivotal==True and proportion==True:
+        Mobs = np.mean(dataArr==count_what)
+
+    #Resampling loop
+    resampleArr = np.zeros(sims)
+    for i in range(sims):
+        p_sample = np.random.choice(dataArr, sample_size, replace=True)  #Samples from the box model (with replacement)
+        p_count = np.sum(p_sample == count_what)
+        resampleArr[i] = p_count
+   
+    #Convert to proportions if desired
+    if proportion:
+        resampleArr = resampleArr/sample_size
+    
+    #Compute confidence interval
+    CIpercentile = np.percentile(resampleArr, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
+    if pivotal:
+        CIpivotal = np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
+        CI = CIpivotal
+    else:
+        CI = CIpercentile
+      
+    #Return results
+    if return_resamples:
+        return CI, resampleArr
+    else:
+        return CI
+
+
+def CI_percentile_to_pivotal(Mobs, CIpercentile):
+    return np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
 
 
 # Additional this function also do the same job : def calculate_confidence_interval(simulated_rr, percentile=95):
