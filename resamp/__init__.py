@@ -4,7 +4,7 @@
 # ├── __init__.py
 # └── resamp.py
 
-# from .resamp import *
+from .resamp import *
 
 from .resamp import (
     median_absolute_deviation,
