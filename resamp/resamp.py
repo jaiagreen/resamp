@@ -3,7 +3,7 @@
 ### ACTIVE FINAL SCRIPT
 
 ## VERSION - 1.6.9
-## DATE: 18 APRIL 2024 
+## DATE: 19 APRIL 2024 
 ## AUTHOR: VISHANTH HARI RAJ
 ## SUPERVISOR: JANE SHEVTSOV
 
@@ -176,46 +176,18 @@ def bootstrap_chi_abs(observed_data, num_simulations=10000, with_replacement=Tru
 
     return results
 
-
-# def calculate_p_value_bootstrap(observed_data, simulated_data, two_tailed=False):
-#     """
-#     Calculates the p-value for the chi absolute statistic using bootstrap methods.
-
-#     Parameters:
-#         observed_data(np.array): The observed chi absolute statistic.
-#         simulated_data (np.array): The array of chi absolute statistics from bootstrap samples.
-#         two_tailed (bool): If True, perform a two-tailed test. Defaults to False (one-tailed test).
-
-#     Returns:
-#         float: The p-value.
-#     """
-#     try:
-#         if two_tailed:
-#             # For a two-tailed test, consider both tails of the distribution
-#             tail_proportion = np.mean(simulated_data >= observed_data)
-#             p_value = 2 * min(tail_proportion, 1 - tail_proportion)
-#         else:
-#             # For a one-tailed test, only consider the tail of interest
-#             p_value = np.mean(simulated_data >= observed_data)
-        
-#         return p_value
-#     except Exception as e:
-#         logging.error("Error in calculating p-value: ", exc_info=True)
-#         return None
-
-#Updated Fuction:
-def calculate_p_value_bootstrap(observed_data, simulated_data, two_tailed=False):
+def p_value_resampled(observed_data, simulated_data, two_tailed=True):
     """
-    Calculates the p-value for the chi absolute statistic using bootstrap methods, 
+    Calculates the p-value for a statistic using bootstrap methods, 
     determining first if the observed statistic lies on the left or right side of the distribution's mean.
 
     Parameters:
-        observed_data (float): The observed chi absolute statistic.
-        simulated_data (np.array): The array of chi absolute statistics from bootstrap samples.
-        two_tailed (bool): If True, perform a two-tailed test. Defaults to False (one-tailed test).
+        observed_data (float): The observed statistic.
+        simulated_data (np.array): The array of resampled statistics.
+        two_tailed (bool): If True, perform a two-tailed test; otherwise, do one-tailed. Defaults to True.
 
     Returns:
-        float: The p-value.
+        p (float): The p-value.
     """
     try:
         # Determine the side of the distribution where the observed data lies
