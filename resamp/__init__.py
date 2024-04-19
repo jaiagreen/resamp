@@ -4,8 +4,9 @@
 # ├── __init__.py
 # └── resamp.py
 
-# from .resamp import *
+from .resamp import *
 
+"""
 from .resamp import (
     median_absolute_deviation,
     read_data,
@@ -37,6 +38,7 @@ from .resamp import (
     calculate_statistic,
     power_analysis,
 )
+"""
 
 __all__ = [
     "median_absolute_deviation",
@@ -64,7 +66,7 @@ __all__ = [
     "resample_one_group_count",
     "confidence_interval_count",
     "CI_percentile_to_pivotal",
-    "cal_ci_one_sample",
+    "confidence_interval_one_sample",
     "bootstrap_confidence_interval",
     "plot_bootstrap_lines",
     "calculate_statistic",

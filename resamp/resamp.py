@@ -670,7 +670,7 @@ def confidence_interval_one_sample(data, measure_function, confidence_level=99, 
     #Resampling loop
     resampleArr = np.zeros(sims)
     for i in range(sims):
-        p_sample = np.random.choice(dataArr, sample_size, replace=True)  #Samples from the data (with replacement)
+        p_sample = np.random.choice(dataArr, len(dataArr), replace=True)  #Samples from the data (with replacement)
         p_measure = measure_function(p_sample)
         resampleArr[i] = p_measure
       
