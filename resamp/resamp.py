@@ -645,34 +645,48 @@ def CI_percentile_to_pivotal(Mobs, CIpercentile):
     return np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
 
 
-# Additional this function also do the same job : def calculate_confidence_interval(simulated_rr, percentile=95):
-def cal_ci_one_sample(data, confidence_level=99):
+def confidence_interval_one_sample(data, measure_function, confidence_level=99, sims=10000, pivotal=True, return_resamples=False):
     """
     Calculate a custom confidence interval for a 1-D array based on the specified confidence level.
     
     Parameters:
-        data (np.array): The 1-D array of resampled values or any numeric data.
+        data (list or np.array): 1-D array or list of numeric data
+        measure function (function name): A function that returns your measure, such as np.median or a custom function
         confidence_level (float): The confidence level expressed as a percentage. Defaults to 99.
+        sims (int): How many simulations to run. Default 10,000
+        pivotal (bool): Whether to compute a pivotal confidence interval (default True). If False, percentile will be used.
+        return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
     
     Returns:
-        tuple: A tuple containing the lower and upper bounds of the confidence interval.
+        confidence interval (as numpy array)
+        resampling data (if desired)
     """
     # Ensure data is a numpy array for efficient operations
-    data = np.array(data)
+    dataArr = np.array(data)
+
+    #Get sample measure
+    Mobs = measure_function(dataArr)
+
+    #Resampling loop
+    resampleArr = np.zeros(sims)
+    for i in range(sims):
+        p_sample = np.random.choice(dataArr, sample_size, replace=True)  #Samples from the data (with replacement)
+        p_measure = measure_function(p_sample)
+        resampleArr[i] = p_measure
+      
+    #Compute confidence interval
+    CIpercentile = np.percentile(resampleArr, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
+    if pivotal:
+        CIpivotal = np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
+        CI = CIpivotal
+    else:
+        CI = CIpercentile
     
-    # Sort the data
-    data.sort()
-    
-    # Calculate the positions for the lower and upper bounds
-    total_elements = len(data)
-    lower_pos = int(((100 - confidence_level) / 2) * total_elements / 100)
-    upper_pos = int(total_elements - lower_pos - 1)  # Adjust by 1 for zero-based indexing
-    
-    # Extract the values at the calculated positions
-    lower_value = data[lower_pos]
-    upper_value = data[upper_pos]
-    
-    return lower_value, upper_value
+    #Return results
+    if return_resamples:
+        return CI, resampleArr
+    else:
+        return CI
 
 
 #########################################################################################################################################
