@@ -176,6 +176,7 @@ def bootstrap_chi_abs(observed_data, num_simulations=10000, with_replacement=Tru
 
     return results
 
+#This should be the canonical function for p-values in resamp
 def p_value_resampled(observed_data, simulated_data, two_tailed=True):
     """
     Calculates the p-value for a statistic using bootstrap methods, 
@@ -554,7 +555,7 @@ def resample_one_group_count(box, sample_stat, sample_size, count_what="A", two_
         observed = np.sum(dataArr == count_what)
     else:
         observed = np.mean(dataArr == count_what)
-    p = calculate_p_value_bootstrap(observed_data = sample_stat, simulated_data = resampleArr, two_tailed=two_tailed)
+    p = p_value_resampled(observed_data = sample_stat, simulated_data = resampleArr, two_tailed=two_tailed)
     
     #Return results
     if return_resamples:
@@ -595,8 +596,8 @@ def confidence_interval_count(box, sample_size, confidence_level=99, count_what=
         p_sample = np.random.choice(dataArr, sample_size, replace=True)  #Samples from the box model (with replacement)
         p_count = np.sum(p_sample == count_what)
         if proportion:
-           p_count = p_count/sample_size
-       resampleArr[i] = p_count
+            p_count = p_count/sample_size
+        resampleArr[i] = p_count
    
     #Convert to proportions if desired
     if proportion:
@@ -821,3 +822,4 @@ def power_analysis(obs_diff, group1, group2, num_simulations=1000, alpha=0.01, p
 
     required_sample_sizes = (sample_size_group1, sample_size_group2)
     return required_sample_sizes, achieved_power
+
