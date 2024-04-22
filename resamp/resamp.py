@@ -545,10 +545,12 @@ def resample_one_group_count(box, sample_stat, sample_size, count_what="A", two_
     for i in range(sims):
         p_sample = np.random.choice(dataArr, sample_size, replace=True)  #Samples from the box model (with replacement)
         p_count = np.sum(p_sample == count_what)
+        if proportion:
+            p_count = p_count/sample_size
         resampleArr[i] = p_count
     
     #Compute p-value
-    if proportion == False:
+    if proportion:
         observed = np.sum(dataArr == count_what)
     else:
         observed = np.mean(dataArr == count_what)
@@ -592,7 +594,9 @@ def confidence_interval_count(box, sample_size, confidence_level=99, count_what=
     for i in range(sims):
         p_sample = np.random.choice(dataArr, sample_size, replace=True)  #Samples from the box model (with replacement)
         p_count = np.sum(p_sample == count_what)
-        resampleArr[i] = p_count
+        if proportion:
+           p_count = p_count/sample_size
+       resampleArr[i] = p_count
    
     #Convert to proportions if desired
     if proportion:
