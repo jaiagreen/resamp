@@ -619,6 +619,16 @@ def confidence_interval_count(box, sample_size, confidence_level=99, count_what=
 
 
 def CI_percentile_to_pivotal(Mobs, CIpercentile):
+    """
+    Convert percentile confidence interval to pivotal confidence interval.
+    
+    Parameters:
+        Mobs (float): Measured quantity you want to put a CI on (mean, median, etc.)
+        CIpercentile (list or Numpy array): Percentile CI
+    
+    Returns:
+        Confidence interval (Numpy array)
+    """
     return np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
 
 
