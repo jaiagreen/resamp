@@ -583,7 +583,7 @@ def confidence_interval_count(box, sample_size, confidence_level=99, count_what=
         resampling data (if desired)
     """
     
-    dataArr = np.array(box)  #Converts box model to NumPy array
+    dataArr = np.array(box)  #Converts box model to Numpy array
     
     if pivotal==True and proportion==False:  #Percentile CIs don't use Mobs
         Mobs = np.sum(dataArr==count_what)
@@ -595,14 +595,10 @@ def confidence_interval_count(box, sample_size, confidence_level=99, count_what=
     for i in range(sims):
         p_sample = np.random.choice(dataArr, sample_size, replace=True)  #Samples from the box model (with replacement)
         p_count = np.sum(p_sample == count_what)
-        if proportion:
+        if proportion:  #Convert to proportions if desired
             p_count = p_count/sample_size
         resampleArr[i] = p_count
    
-    #Convert to proportions if desired
-    if proportion:
-        resampleArr = resampleArr/sample_size
-    
     #Compute confidence interval
     CIpercentile = np.percentile(resampleArr, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
     if pivotal:
