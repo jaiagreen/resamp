@@ -589,20 +589,16 @@ def confidence_interval_count(box, sample_size, confidence_level=99, count_what=
         Mobs = np.sum(dataArr==count_what)
     elif pivotal==True and proportion==True:
         Mobs = np.mean(dataArr==count_what)
-
+        
     #Resampling loop
     resampleArr = np.zeros(sims)
     for i in range(sims):
         p_sample = np.random.choice(dataArr, sample_size, replace=True)  #Samples from the box model (with replacement)
         p_count = np.sum(p_sample == count_what)
-        if proportion:
+        if proportion:  #Convert to proportions if desired
             p_count = p_count/sample_size
         resampleArr[i] = p_count
    
-    #Convert to proportions if desired
-    if proportion:
-        resampleArr = resampleArr/sample_size
-    
     #Compute confidence interval
     CIpercentile = np.percentile(resampleArr, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
     if pivotal:
@@ -619,12 +615,22 @@ def confidence_interval_count(box, sample_size, confidence_level=99, count_what=
 
 
 def CI_percentile_to_pivotal(Mobs, CIpercentile):
+    """
+    Convert percentile confidence interval to pivotal confidence interval.
+    
+    Parameters:
+        Mobs (float): Measured quantity you want to put a CI on (mean, median, etc.)
+        CIpercentile (list or Numpy array): Percentile CI
+    
+    Returns:
+        Confidence interval (Numpy array)
+    """
     return np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
 
 
 def confidence_interval_one_sample(data, measure_function, confidence_level=99, sims=10000, pivotal=True, return_resamples=False):
     """
-    Calculate a custom confidence interval for a 1-D array based on the specified confidence level.
+    Calculates a confidence interval for a measure on a 1-D array based on the specified confidence level.
     
     Parameters:
         data (list or np.array): 1-D array or list of numeric data
@@ -664,6 +670,59 @@ def confidence_interval_one_sample(data, measure_function, confidence_level=99, 
         return CI, resampleArr
     else:
         return CI
+
+    
+########################################################################################################################################
+
+#Paired data
+
+def slope_plot(data, group_labels=["", ""], line_color="gray", point_color="black"):
+    """
+    Plots connected dot plots for 2 groups of paired data and lines
+    
+    Inputs:
+        data: two-column array or data frame of paired data points
+        group_labels: list of what each group should be labeled (default unlabeled)
+        line_color: color of connecting lines (default gray)
+        point_color: color of points (default black)
+    
+    Output:
+        ax: connected dot plot
+    
+    """
+    
+    dataArr = np.array(data)
+    fig, ax = plt.subplots(figsize=(4, 3))
+
+    x1=0.8
+    x2=1.2
+    n = dataArr.shape[0]
+    for i in range(n):
+        ax.plot([x1, x2], [dataArr[i,0], dataArr[i,1]], color=line_color)
+
+        # Plot the points
+        ax.scatter(n*[x1-0.01], dataArr[:,0], color=point_color, s=25, label=labels[0])
+        ax.scatter(n*[x2+0.01], dataArr[:,1], color=point_color, s=25, label=labels[1])
+
+    # Fix the axes and labels
+    ax.set_xticks([x1, x2])
+    _ = ax.set_xticklabels(labels, fontsize='x-large')
+
+    return ax
+
+
+def paired_sample_pvalue(Mobs, deltas, nsims=10000, return_sims=False):
+    sims=np.zeros(nsims)
+    for i in range(nsims):
+        ones_arr=np.random.choice([1,-1], len(deltas))
+        p_diffs=deltas*ones_arr
+        sims[i]=np.mean(p_diffs)
+
+    pval=p_value_resampled(Mobs, sims, two_tailed=True)
+    if return_sims == True:
+        return pval, sims
+    else:
+        return pval
 
 
 #########################################################################################################################################
@@ -822,4 +881,3 @@ def power_analysis(obs_diff, group1, group2, num_simulations=1000, alpha=0.01, p
 
     required_sample_sizes = (sample_size_group1, sample_size_group2)
     return required_sample_sizes, achieved_power
-
