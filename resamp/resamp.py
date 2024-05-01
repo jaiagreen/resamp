@@ -2,9 +2,9 @@
 
 ### ACTIVE FINAL SCRIPT
 
-## VERSION - 1.6.9
-## DATE: 19 APRIL 2024 
-## AUTHOR: VISHANTH HARI RAJ
+## VERSION - 1.6.10
+## DATE: 30 APRIL 2024 
+## AUTHOR: VISHANTH HARI RAJ, JANE SHEVTSOV, KRISTIN MCCULLY
 ## SUPERVISOR: JANE SHEVTSOV
 
 
@@ -177,14 +177,15 @@ def bootstrap_chi_abs(observed_data, num_simulations=10000, with_replacement=Tru
     return results
 
 #This should be the canonical function for p-values in resamp
-def p_value_resampled(observed_data, simulated_data, two_tailed=True):
+# Edited by Kristin 4/30/2024 to calculate 2nd tail
+def p_value_resampled(observed_stat, simulated_stats, two_tailed=True):
     """
     Calculates the p-value for a statistic using bootstrap methods, 
     determining first if the observed statistic lies on the left or right side of the distribution's mean.
 
     Parameters:
-        observed_data (float): The observed statistic.
-        simulated_data (np.array): The array of resampled statistics.
+        observed_stat (float): The observed statistic.
+        simulated_stats (np.array): The array of resampled statistics.
         two_tailed (bool): If True, perform a two-tailed test; otherwise, do one-tailed. Defaults to True.
 
     Returns:
@@ -192,16 +193,16 @@ def p_value_resampled(observed_data, simulated_data, two_tailed=True):
     """
     try:
         # Determine the side of the distribution where the observed data lies
-        mean_simulated_data = np.mean(simulated_data)
-        is_right_side = observed_data > mean_simulated_data
+        mean_simulated_stats = np.mean(simulated_stats)
+        is_right_side = observed_stat > mean_simulated_stats
         
         if two_tailed:
             if is_right_side:
                 # For a two-tailed test, consider both tails of the distribution (right side logic)
-                tail_proportion = np.mean(simulated_data >= observed_data)
+                tail_proportion = np.mean(simulated_stats >= observed_stat) + np.mean(simulated_stats <= -observed_stat)
             else:
                 # For a two-tailed test, consider both tails of the distribution (left side logic)
-                tail_proportion = np.mean(simulated_data <= observed_data)
+                tail_proportion = np.mean(simulated_stats <= observed_stat) + np.mean(simulated_stats >= observed_stat)
             p_value = tail_proportion
         else:
             if is_right_side:
@@ -676,6 +677,7 @@ def confidence_interval_one_sample(data, measure_function, confidence_level=99, 
 
 #Paired data
 
+#Written by Sepideh Parhami
 def slope_plot(data, group_labels=["", ""], line_color="gray", point_color="black"):
     """
     Plots connected dot plots for 2 groups of paired data and lines
