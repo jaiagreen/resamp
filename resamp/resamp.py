@@ -2,7 +2,7 @@
 
 ### ACTIVE FINAL SCRIPT
 
-## VERSION - 1.6.10
+## VERSION - 1.7.1
 ## DATE: 30 APRIL 2024 
 ## AUTHOR: VISHANTH HARI RAJ, JANE SHEVTSOV, KRISTIN MCCULLY
 ## SUPERVISOR: JANE SHEVTSOV
@@ -678,7 +678,7 @@ def confidence_interval_one_sample(data, measure_function, confidence_level=99, 
 #Paired data
 
 #Written by Sepideh Parhami
-def slope_plot(data, group_labels=["", ""], line_color="gray", point_color="black"):
+def paired_plot(data, group_labels=["", ""], line_color="gray", point_color="black"):
     """
     Plots connected dot plots for 2 groups of paired data and lines
     
@@ -713,15 +713,30 @@ def slope_plot(data, group_labels=["", ""], line_color="gray", point_color="blac
     return ax
 
 
-def paired_sample_pvalue(Mobs, deltas, nsims=10000, return_sims=False):
-    sims=np.zeros(nsims)
-    for i in range(nsims):
-        ones_arr=np.random.choice([1,-1], len(deltas))
+def paired_sample_pvalue(deltas, measure_function, sims=10000, return_resamples=False):
+    """
+    Computes a p-value for paired data
+    
+    Inputs:
+        deltas (list or 1-D array): differences between paired measurements
+        measure_function (function): function that computed measure of central tendency for the deltas. Typically np.mean or np.median.
+        sims (int): How many simulations to run. Default 10,000
+        return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
+    
+    Outputs: 
+        p-value (two-tailed)
+        resamples (numpy array) if desired
+    """   
+    Mobs = measure_function(deltas)
+    
+    p_diffs_arr=np.zeros(sims)
+    for i in range(sims):
+        ones_arr=np.random.choice([1,-1], len(deltas))  #Randomly make each delta + or -
         p_diffs=deltas*ones_arr
-        sims[i]=np.mean(p_diffs)
+        p_diffs_arr[i]=measure_function(p_diffs)
 
-    pval=p_value_resampled(Mobs, sims, two_tailed=True)
-    if return_sims == True:
+    pval=p_value_resampled(Mobs, p_diffs_arr, two_tailed=True)
+    if return_resamples == True:
         return pval, sims
     else:
         return pval
