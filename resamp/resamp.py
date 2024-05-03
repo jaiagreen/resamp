@@ -2,7 +2,7 @@
 
 ### ACTIVE FINAL SCRIPT
 
-## VERSION - 1.7.1
+## VERSION - 1.6.10 - edited p_value_resampled to be two-tailed, not loaded to Team project or pip
 ## DATE: 30 APRIL 2024 
 ## AUTHOR: VISHANTH HARI RAJ, JANE SHEVTSOV, KRISTIN MCCULLY
 ## SUPERVISOR: JANE SHEVTSOV
@@ -104,7 +104,20 @@ def calculate_chi_abs(observed, expected=None):
         logging.error("Error calculating p-value: ", exc_info=True)
         return None
 
+
 def chi_abs_stat(observed_data, expected_data=None):
+    """
+    Compute chi-abs statistic
+    
+    Input:
+        observed data (array or data frame): Observed counts
+        expected data (array or data frame, optional): Expected counts. If not provided, 
+        the function will calculate an expected table that assumes equal probabilities across columns.
+        
+    Output:
+        chi-abs statistic
+    """
+
     try:
         # If expected data is not provided, calculate it
         if expected_data is None:
@@ -121,7 +134,6 @@ def chi_abs_stat(observed_data, expected_data=None):
         return None
 
 
-
 def convert_df_to_numpy(df_observed, df_expected):
     """
     Converts DataFrame data to numpy arrays for use in other functions, 
@@ -136,18 +148,19 @@ def convert_df_to_numpy(df_observed, df_expected):
     """
     observed_array = df_observed.values
     expected_array = df_expected.values
-    return observed_array, expected_array       
+    return observed_array, expected_array
 
 
-def bootstrap_chi_abs(observed_data, num_simulations=10000, with_replacement=True):
-    
+def resample_chi_abs(observed_data, sims=10000, with_replacement=True):
     """
     Generates a bootstrap distribution of the chi absolute statistic for an n*n contingency table.
 
     Parameters:
         observed_data (np.array or pd.DataFrame): n*n contingency table with observed frequencies.
         num_simulations (int): Number of bootstrap samples to generate.
-        with_replacement (bool): Indicates whether sampling should be with replacement."""
+        with_replacement (bool): Indicates whether sampling should be with replacement.
+     """
+
     if isinstance(observed_data, pd.DataFrame):
         observed_data = observed_data.values
 
@@ -175,6 +188,7 @@ def bootstrap_chi_abs(observed_data, num_simulations=10000, with_replacement=Tru
         results[i] = chi_abs
 
     return results
+
 
 #This should be the canonical function for p-values in resamp
 # Edited by Kristin 4/30/2024 to calculate 2nd tail
@@ -211,7 +225,6 @@ def p_value_resampled(observed_stat, simulated_stats, two_tailed=True):
             else:
                 # For a one-tailed test, only consider the tail of interest (left side logic)
                 p_value = np.mean(simulated_data <= observed_data)
-        
         return p_value
     except Exception as e:
         logging.error("Error in calculating p-value: ", exc_info=True)
@@ -245,7 +258,7 @@ def plot_chi_abs_distribution(simulated_data, observed_data, p_value):
 
 ##############################################################################################################################  
     
-#CALCULATION OF RELATIVE RISK, (SIM DATA VS OBSERVED DATA) CONFIDENCE INTERVAL, PLOT GRAPH
+#CALCULATION OF RISK, (SIM DATA VS OBSERVED DATA) CONFIDENCE INTERVAL, PLOT GRAPH
 # Relative Risk of two treatments
 # ProbCalculation
 # Confidence Interval
@@ -258,7 +271,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
-def calculate_relative_risk_two_treatments(observed_data, event_row_index, treatment1_index, treatment2_index):
+def relative_risk(observed_data, event_row_index, treatment1_index, treatment2_index):
     """
     Calculate the relative risk of an event between two specific treatments.
 
@@ -318,24 +331,6 @@ def resample_and_calculate_rr(observed_data, event_row_index, reference_treatmen
     # Return an array of simulated RR values
     return simulated_rr
 
-
-# Calculate the 99% confidence interval
-def calculate_confidence_interval(simulated_rr, percentile=99):
-    """
-    Calculate the confidence interval for the relative risk based on the distribution of simulated relative risks.
-
-    Parameters:
-        simulated_rr (np.array): Array of simulated relative risks.
-        percentile (float, optional): The percentile for the confidence interval. Defaults to 95.
-
-    Returns:
-        tuple: Lower and upper bounds of the confidence interval.
-    """
-    lower_percentile = (100 - percentile) / 2
-    upper_percentile = 100 - lower_percentile
-    lower_bound = np.percentile(simulated_rr, lower_percentile)
-    upper_bound = np.percentile(simulated_rr, upper_percentile)
-    return lower_bound, upper_bound
 
 def calculate_probabilities_for_each_treatment(observed_data, event_row_index):
     """
@@ -677,7 +672,6 @@ def confidence_interval_one_sample(data, measure_function, confidence_level=99, 
 
 #Paired data
 
-#Written by Sepideh Parhami
 def paired_plot(data, group_labels=["", ""], line_color="gray", point_color="black"):
     """
     Plots connected dot plots for 2 groups of paired data and lines
@@ -726,7 +720,7 @@ def paired_sample_pvalue(deltas, measure_function, sims=10000, return_resamples=
     Outputs: 
         p-value (two-tailed)
         resamples (numpy array) if desired
-    """   
+    """
     Mobs = measure_function(deltas)
     
     p_diffs_arr=np.zeros(sims)
@@ -898,3 +892,4 @@ def power_analysis(obs_diff, group1, group2, num_simulations=1000, alpha=0.01, p
 
     required_sample_sizes = (sample_size_group1, sample_size_group2)
     return required_sample_sizes, achieved_power
+
