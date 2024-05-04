@@ -167,13 +167,13 @@ def resample_chi_abs(observed_data, sims=10000, with_replacement=True):
     total_rows, total_columns = observed_data.shape
     expected_data = calculate_expected(observed_data)
 
-    results = np.zeros(num_simulations)
+    results = np.zeros(sims)
     total_counts_per_column = observed_data.sum(axis=0)
 
     # Create a pooled data array combining all categories across rows and columns
     pooled_data = np.concatenate([np.repeat(row, sum(observed_data[row, :])) for row in range(total_rows)])
 
-    for i in range(num_simulations):
+    for i in range(sims):
         sim = np.zeros_like(observed_data)
 
         for col in range(total_columns):
@@ -293,31 +293,32 @@ def relative_risk(observed_data, event_row_index, treatment1_index, treatment2_i
     return relative_risk
 
 
-def resample_relative_risk(observed_data, event_row_index, reference_treatment_index=0, num_simulations=10000):
+def resample_relative_risk(observed_data, event_row_index, reference_treatment_index=0, sims=10000):
     """
     Resamples relative risk from observed data
     
     Inputs:
-        observed_data (array or data frame): 2x2 table of counts
+        observed_data (array or data frame): table of counts
         event_row_index (int): which row contains event of interest
-        reference_treatment_index (int): 
+        reference_treatment_index (int): which column is the baseline for comparison
+        sims (int): number of resampling simulations to run
     
-    Output:
-        array of relative risk values
+    Returns:
+        Numpy array: resampled relative risk values
     """
     
     
     # Extract the dimensions of the observed_data array
     total_rows, total_columns = observed_data.shape
     
-    # Calculate the total counts for each column (treatment group)
+    # Calculate the total counts for each column (by group)
     total_counts_per_column = observed_data.sum(axis=0)
     
     # Initialize an array to store simulated RR values
-    simulated_rr = np.zeros(num_simulations)
+    simulated_rr = np.zeros(sims)
 
     # Loop through the specified number of simulations
-    for i in range(num_simulations):
+    for i in range(sims):
         # Create an array to simulate a resampled dataset, initialized with zeros
         simulated_sample = np.zeros_like(observed_data)
         
@@ -368,6 +369,34 @@ def calculate_probabilities_for_each_treatment(observed_data, event_row_index):
         probabilities[f"Treatment_{col+1}"] = prob_event_treatment
 
     return probabilities
+
+
+def relative_risk_ci(simulated_rr_array, observed_rr, confidence_level=99, pivotal=True):
+    """
+    Compute confidence interval from simulated relative risk values, using exponential adjustment for pivotal CIs.
+
+    Parameters:
+        simulated_rr_array (np.array): Array of simulated relative risks
+        observed_rr (float): The observed relative risk
+        confidence_level (float): The level of confidence interval you want (95%, 99%, etc.) This needs to be a number between 0 and 100.
+        pivotal (bool): Whether to compute a pivotal confidence interval (default True). If False, percentile will be used.
+    """
+
+    CIpercentile = np.percentile(simulated_rr_array, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
+
+    if pivotal:
+        Mlower = CIpercentile[0]
+        Mupper = CIpercentile[1]
+        lowerbound = np.exp(2 * np.log(observed_rr) - np.log(Mupper))
+        upperbound = np.exp(2 * np.log(observed_rr) - np.log(Mlower))
+        CIpivotal = np.array([lowerbound, upperbound])
+        CI = CIpivotal
+    else:
+        CI = CIpercentile
+
+    return CI
+
+
 
 def plot_relative_risk_distribution(simulated_rr, observed_rr):
     """
@@ -665,7 +694,7 @@ def confidence_interval_one_sample(data, measure_function, confidence_level=99, 
         p_sample = np.random.choice(dataArr, len(dataArr), replace=True)  #Samples from the data (with replacement)
         p_measure = measure_function(p_sample)
         resampleArr[i] = p_measure
-      
+
     #Compute confidence interval
     CIpercentile = np.percentile(resampleArr, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
     if pivotal:
@@ -673,7 +702,7 @@ def confidence_interval_one_sample(data, measure_function, confidence_level=99, 
         CI = CIpivotal
     else:
         CI = CIpercentile
-    
+
     #Return results
     if return_resamples:
         return CI, resampleArr
