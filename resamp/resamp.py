@@ -2,9 +2,9 @@
 
 ### ACTIVE FINAL SCRIPT
 
-## VERSION - 1.6.9
-## DATE: 19 APRIL 2024 
-## AUTHOR: VISHANTH HARI RAJ
+## VERSION - 1.6.10 - edited p_value_resampled to be two-tailed, not loaded to Team project or pip
+## DATE: 30 APRIL 2024 
+## AUTHOR: VISHANTH HARI RAJ, JANE SHEVTSOV, KRISTIN MCCULLY
 ## SUPERVISOR: JANE SHEVTSOV
 
 
@@ -104,7 +104,20 @@ def calculate_chi_abs(observed, expected=None):
         logging.error("Error calculating p-value: ", exc_info=True)
         return None
 
+
 def chi_abs_stat(observed_data, expected_data=None):
+    """
+    Compute chi-abs statistic
+    
+    Input:
+        observed data (array or data frame): Observed counts
+        expected data (array or data frame, optional): Expected counts. If not provided, 
+        the function will calculate an expected table that assumes equal probabilities across columns.
+        
+    Output:
+        chi-abs statistic
+    """
+
     try:
         # If expected data is not provided, calculate it
         if expected_data is None:
@@ -121,7 +134,6 @@ def chi_abs_stat(observed_data, expected_data=None):
         return None
 
 
-
 def convert_df_to_numpy(df_observed, df_expected):
     """
     Converts DataFrame data to numpy arrays for use in other functions, 
@@ -136,18 +148,19 @@ def convert_df_to_numpy(df_observed, df_expected):
     """
     observed_array = df_observed.values
     expected_array = df_expected.values
-    return observed_array, expected_array       
+    return observed_array, expected_array
 
 
-def bootstrap_chi_abs(observed_data, num_simulations=10000, with_replacement=True):
-    
+def resample_chi_abs(observed_data, sims=10000, with_replacement=True):
     """
     Generates a bootstrap distribution of the chi absolute statistic for an n*n contingency table.
 
     Parameters:
         observed_data (np.array or pd.DataFrame): n*n contingency table with observed frequencies.
         num_simulations (int): Number of bootstrap samples to generate.
-        with_replacement (bool): Indicates whether sampling should be with replacement."""
+        with_replacement (bool): Indicates whether sampling should be with replacement.
+     """
+
     if isinstance(observed_data, pd.DataFrame):
         observed_data = observed_data.values
 
@@ -176,15 +189,17 @@ def bootstrap_chi_abs(observed_data, num_simulations=10000, with_replacement=Tru
 
     return results
 
+
 #This should be the canonical function for p-values in resamp
-def p_value_resampled(observed_data, simulated_data, two_tailed=True):
+# Edited by Kristin 4/30/2024 to calculate 2nd tail
+def p_value_resampled(observed_stat, simulated_stats, two_tailed=True):
     """
     Calculates the p-value for a statistic using bootstrap methods, 
     determining first if the observed statistic lies on the left or right side of the distribution's mean.
 
     Parameters:
-        observed_data (float): The observed statistic.
-        simulated_data (np.array): The array of resampled statistics.
+        observed_stat (float): The observed statistic.
+        simulated_stats (np.array): The array of resampled statistics.
         two_tailed (bool): If True, perform a two-tailed test; otherwise, do one-tailed. Defaults to True.
 
     Returns:
@@ -192,16 +207,16 @@ def p_value_resampled(observed_data, simulated_data, two_tailed=True):
     """
     try:
         # Determine the side of the distribution where the observed data lies
-        mean_simulated_data = np.mean(simulated_data)
-        is_right_side = observed_data > mean_simulated_data
+        mean_simulated_stats = np.mean(simulated_stats)
+        is_right_side = observed_stat > mean_simulated_stats
         
         if two_tailed:
             if is_right_side:
                 # For a two-tailed test, consider both tails of the distribution (right side logic)
-                tail_proportion = np.mean(simulated_data >= observed_data)
+                tail_proportion = np.mean(simulated_stats >= observed_stat) + np.mean(simulated_stats <= -observed_stat)
             else:
                 # For a two-tailed test, consider both tails of the distribution (left side logic)
-                tail_proportion = np.mean(simulated_data <= observed_data)
+                tail_proportion = np.mean(simulated_stats <= observed_stat) + np.mean(simulated_stats >= observed_stat)
             p_value = tail_proportion
         else:
             if is_right_side:
@@ -210,7 +225,6 @@ def p_value_resampled(observed_data, simulated_data, two_tailed=True):
             else:
                 # For a one-tailed test, only consider the tail of interest (left side logic)
                 p_value = np.mean(simulated_data <= observed_data)
-        
         return p_value
     except Exception as e:
         logging.error("Error in calculating p-value: ", exc_info=True)
@@ -244,7 +258,7 @@ def plot_chi_abs_distribution(simulated_data, observed_data, p_value):
 
 ##############################################################################################################################  
     
-#CALCULATION OF RELATIVE RISK, (SIM DATA VS OBSERVED DATA) CONFIDENCE INTERVAL, PLOT GRAPH
+#CALCULATION OF RISK, (SIM DATA VS OBSERVED DATA) CONFIDENCE INTERVAL, PLOT GRAPH
 # Relative Risk of two treatments
 # ProbCalculation
 # Confidence Interval
@@ -257,7 +271,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
-def calculate_relative_risk_two_treatments(observed_data, event_row_index, treatment1_index, treatment2_index):
+def relative_risk(observed_data, event_row_index, treatment1_index, treatment2_index):
     """
     Calculate the relative risk of an event between two specific treatments.
 
@@ -279,7 +293,20 @@ def calculate_relative_risk_two_treatments(observed_data, event_row_index, treat
     return relative_risk
 
 
-def resample_and_calculate_rr(observed_data, event_row_index, reference_treatment_index=0, num_simulations=10000):
+def resample_relative_risk(observed_data, event_row_index, reference_treatment_index=0, num_simulations=10000):
+    """
+    Resamples relative risk from observed data
+    
+    Inputs:
+        observed_data (array or data frame): 2x2 table of counts
+        event_row_index (int): which row contains event of interest
+        reference_treatment_index (int): 
+    
+    Output:
+        array of relative risk values
+    """
+    
+    
     # Extract the dimensions of the observed_data array
     total_rows, total_columns = observed_data.shape
     
@@ -317,24 +344,6 @@ def resample_and_calculate_rr(observed_data, event_row_index, reference_treatmen
     # Return an array of simulated RR values
     return simulated_rr
 
-
-# Calculate the 99% confidence interval
-def calculate_confidence_interval(simulated_rr, percentile=99):
-    """
-    Calculate the confidence interval for the relative risk based on the distribution of simulated relative risks.
-
-    Parameters:
-        simulated_rr (np.array): Array of simulated relative risks.
-        percentile (float, optional): The percentile for the confidence interval. Defaults to 95.
-
-    Returns:
-        tuple: Lower and upper bounds of the confidence interval.
-    """
-    lower_percentile = (100 - percentile) / 2
-    upper_percentile = 100 - lower_percentile
-    lower_bound = np.percentile(simulated_rr, lower_percentile)
-    upper_bound = np.percentile(simulated_rr, upper_percentile)
-    return lower_bound, upper_bound
 
 def calculate_probabilities_for_each_treatment(observed_data, event_row_index):
     """
@@ -676,7 +685,7 @@ def confidence_interval_one_sample(data, measure_function, confidence_level=99, 
 
 #Paired data
 
-def slope_plot(data, group_labels=["", ""], line_color="gray", point_color="black"):
+def paired_plot(data, group_labels=["", ""], line_color="gray", point_color="black"):
     """
     Plots connected dot plots for 2 groups of paired data and lines
     
@@ -701,25 +710,40 @@ def slope_plot(data, group_labels=["", ""], line_color="gray", point_color="blac
         ax.plot([x1, x2], [dataArr[i,0], dataArr[i,1]], color=line_color)
 
         # Plot the points
-        ax.scatter(n*[x1-0.01], dataArr[:,0], color=point_color, s=25, label=labels[0])
-        ax.scatter(n*[x2+0.01], dataArr[:,1], color=point_color, s=25, label=labels[1])
+        ax.scatter(n*[x1-0.01], dataArr[:,0], color=point_color, s=25, label=group_labels[0])
+        ax.scatter(n*[x2+0.01], dataArr[:,1], color=point_color, s=25, label=group_labels[1])
 
     # Fix the axes and labels
     ax.set_xticks([x1, x2])
-    _ = ax.set_xticklabels(labels, fontsize='x-large')
+    _ = ax.set_xticklabels(group_labels, fontsize='x-large')
 
     return ax
 
 
-def paired_sample_pvalue(Mobs, deltas, nsims=10000, return_sims=False):
-    sims=np.zeros(nsims)
-    for i in range(nsims):
-        ones_arr=np.random.choice([1,-1], len(deltas))
+def paired_sample_pvalue(deltas, measure_function, sims=10000, return_resamples=False):
+    """
+    Computes a p-value for paired data
+    
+    Inputs:
+        deltas (list or 1-D array): differences between paired measurements
+        measure_function (function): function that computed measure of central tendency for the deltas. Typically np.mean or np.median.
+        sims (int): How many simulations to run. Default 10,000
+        return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
+    
+    Outputs: 
+        p-value (two-tailed)
+        resamples (numpy array) if desired
+    """
+    Mobs = measure_function(deltas)
+    
+    p_diffs_arr=np.zeros(sims)
+    for i in range(sims):
+        ones_arr=np.random.choice([1,-1], len(deltas))  #Randomly make each delta + or -
         p_diffs=deltas*ones_arr
-        sims[i]=np.mean(p_diffs)
+        p_diffs_arr[i]=measure_function(p_diffs)
 
-    pval=p_value_resampled(Mobs, sims, two_tailed=True)
-    if return_sims == True:
+    pval=p_value_resampled(Mobs, p_diffs_arr, two_tailed=True)
+    if return_resamples == True:
         return pval, sims
     else:
         return pval
@@ -881,3 +905,4 @@ def power_analysis(obs_diff, group1, group2, num_simulations=1000, alpha=0.01, p
 
     required_sample_sizes = (sample_size_group1, sample_size_group2)
     return required_sample_sizes, achieved_power
+
