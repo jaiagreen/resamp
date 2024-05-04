@@ -293,7 +293,20 @@ def relative_risk(observed_data, event_row_index, treatment1_index, treatment2_i
     return relative_risk
 
 
-def resample_and_calculate_rr(observed_data, event_row_index, reference_treatment_index=0, num_simulations=10000):
+def resample_relative_risk(observed_data, event_row_index, reference_treatment_index=0, num_simulations=10000):
+    """
+    Resamples relative risk from observed data
+    
+    Inputs:
+        observed_data (array or data frame): 2x2 table of counts
+        event_row_index (int): which row contains event of interest
+        reference_treatment_index (int): 
+    
+    Output:
+        array of relative risk values
+    """
+    
+    
     # Extract the dimensions of the observed_data array
     total_rows, total_columns = observed_data.shape
     
@@ -697,12 +710,12 @@ def paired_plot(data, group_labels=["", ""], line_color="gray", point_color="bla
         ax.plot([x1, x2], [dataArr[i,0], dataArr[i,1]], color=line_color)
 
         # Plot the points
-        ax.scatter(n*[x1-0.01], dataArr[:,0], color=point_color, s=25, label=labels[0])
-        ax.scatter(n*[x2+0.01], dataArr[:,1], color=point_color, s=25, label=labels[1])
+        ax.scatter(n*[x1-0.01], dataArr[:,0], color=point_color, s=25, label=group_labels[0])
+        ax.scatter(n*[x2+0.01], dataArr[:,1], color=point_color, s=25, label=group_labels[1])
 
     # Fix the axes and labels
     ax.set_xticks([x1, x2])
-    _ = ax.set_xticklabels(labels, fontsize='x-large')
+    _ = ax.set_xticklabels(group_labels, fontsize='x-large')
 
     return ax
 
