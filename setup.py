@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='resamp',
-    version='1.7',
+    version='1.7.1',
     author='Vishanth Hari Raj Balasubramanian',
     author_email='rbvish1007@gmail.com',
     description='A custom statistics library of resampling technqiues for chi-abs, boostrapping analysis and other statistical functions.',
