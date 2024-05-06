@@ -2,8 +2,8 @@
 
 ### ACTIVE FINAL SCRIPT
 
-## VERSION - 1.6.10 - edited p_value_resampled to be two-tailed, not loaded to Team project or pip
-## DATE: 30 APRIL 2024 
+## VERSION - 1.7.1 - edited p_value_resampled to be two-tailed, not loaded to Team project or pip
+## DATE: 6 MAY 2024
 ## AUTHOR: VISHANTH HARI RAJ, JANE SHEVTSOV, KRISTIN MCCULLY
 ## SUPERVISOR: JANE SHEVTSOV
 
@@ -78,7 +78,7 @@ def calculate_chi_squared(observed, expected):
     chi_squared = ((observed - expected) ** 2 / expected).sum().sum()
     return chi_squared
 
-#Calculating the expected Value 
+#Calculating the expected Value
 def calculate_expected(observed):
     row_sums = observed.sum(axis=1)
     col_sums = observed.sum(axis=0)
@@ -108,12 +108,12 @@ def calculate_chi_abs(observed, expected=None):
 def chi_abs_stat(observed_data, expected_data=None):
     """
     Compute chi-abs statistic
-    
+
     Input:
         observed data (array or data frame): Observed counts
-        expected data (array or data frame, optional): Expected counts. If not provided, 
+        expected data (array or data frame, optional): Expected counts. If not provided,
         the function will calculate an expected table that assumes equal probabilities across columns.
-        
+
     Output:
         chi-abs statistic
     """
@@ -136,7 +136,7 @@ def chi_abs_stat(observed_data, expected_data=None):
 
 def convert_df_to_numpy(df_observed, df_expected):
     """
-    Converts DataFrame data to numpy arrays for use in other functions, 
+    Converts DataFrame data to numpy arrays for use in other functions,
     particularly for bootstrapping.
 
     Parameters:
@@ -194,7 +194,7 @@ def resample_chi_abs(observed_data, sims=10000, with_replacement=True):
 # Edited by Kristin 4/30/2024 to calculate 2nd tail
 def p_value_resampled(observed_stat, simulated_stats, two_tailed=True):
     """
-    Calculates the p-value for a statistic using bootstrap methods, 
+    Calculates the p-value for a statistic using bootstrap methods,
     determining first if the observed statistic lies on the left or right side of the distribution's mean.
 
     Parameters:
@@ -209,7 +209,7 @@ def p_value_resampled(observed_stat, simulated_stats, two_tailed=True):
         # Determine the side of the distribution where the observed data lies
         mean_simulated_stats = np.mean(simulated_stats)
         is_right_side = observed_stat > mean_simulated_stats
-        
+
         if two_tailed:
             if is_right_side:
                 # For a two-tailed test, consider both tails of the distribution (right side logic)
@@ -256,15 +256,15 @@ def plot_chi_abs_distribution(simulated_data, observed_data, p_value):
     plt.show()
 
 
-##############################################################################################################################  
-    
+##############################################################################################################################
+
 #CALCULATION OF RISK, (SIM DATA VS OBSERVED DATA) CONFIDENCE INTERVAL, PLOT GRAPH
 # Relative Risk of two treatments
 # ProbCalculation
 # Confidence Interval
 # Plotting the Graph
 
-# VERSION - 1 
+# VERSION - 1
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -286,7 +286,7 @@ def relative_risk(observed_data, event_row_index, treatment1_index, treatment2_i
     """
     total_treatment1 = observed_data[:, treatment1_index].sum()
     total_treatment2 = observed_data[:, treatment2_index].sum()
-    
+
     prob_event_treatment1 = observed_data[event_row_index, treatment1_index] / total_treatment1
     prob_event_treatment2 = observed_data[event_row_index, treatment2_index] / total_treatment2
     relative_risk = prob_event_treatment1 / prob_event_treatment2
@@ -296,23 +296,23 @@ def relative_risk(observed_data, event_row_index, treatment1_index, treatment2_i
 def resample_relative_risk(observed_data, event_row_index, reference_treatment_index=0, num_simulations=10000):
     """
     Resamples relative risk from observed data
-    
+
     Inputs:
         observed_data (array or data frame): 2x2 table of counts
         event_row_index (int): which row contains event of interest
-        reference_treatment_index (int): 
-    
+        reference_treatment_index (int):
+
     Output:
         array of relative risk values
     """
-    
-    
+
+
     # Extract the dimensions of the observed_data array
     total_rows, total_columns = observed_data.shape
-    
+
     # Calculate the total counts for each column (treatment group)
     total_counts_per_column = observed_data.sum(axis=0)
-    
+
     # Initialize an array to store simulated RR values
     simulated_rr = np.zeros(num_simulations)
 
@@ -320,24 +320,24 @@ def resample_relative_risk(observed_data, event_row_index, reference_treatment_i
     for i in range(num_simulations):
         # Create an array to simulate a resampled dataset, initialized with zeros
         simulated_sample = np.zeros_like(observed_data)
-        
+
         # Iterate over columns (treatment groups)
         for col in range(total_columns):
             # Generate a random sample of 0s and 1s based on the proportions in the observed data
             column_sample = np.random.choice([0, 1], size=total_counts_per_column[col], replace=True,
-                                             p=[observed_data[1, col] / total_counts_per_column[col], 
+                                             p=[observed_data[1, col] / total_counts_per_column[col],
                                                 observed_data[0, col] / total_counts_per_column[col]])
-            
+
             # Count the occurrences of 0s and 1s in the resampled column
             simulated_sample[1, col] = np.sum(column_sample == 0)
             simulated_sample[0, col] = np.sum(column_sample == 1)
 
         # Calculate the probability of the event for the reference treatment group
         prob_event_treatment1 = simulated_sample[event_row_index, reference_treatment_index] / total_counts_per_column[reference_treatment_index]
-        
+
         # Calculate the probability of the event for the other treatment group
         prob_event_other_treatment = simulated_sample[event_row_index, 1 - reference_treatment_index] / total_counts_per_column[1 - reference_treatment_index]
-        
+
         # Calculate the Risk Ratio (RR) for the current simulated dataset and store it
         simulated_rr[i] = prob_event_treatment1 / prob_event_other_treatment
 
@@ -379,7 +379,7 @@ def plot_relative_risk_distribution(simulated_rr, observed_rr):
     """
     # Sort the simulated results
     simulated_rr.sort()
-    
+
     # Calculate the 2.5th and 97.5th percentiles for the confidence interval
     Mlower = simulated_rr[int(len(simulated_rr) * 0.025)]
     Mupper = simulated_rr[int(len(simulated_rr) * 0.975)]
@@ -410,9 +410,9 @@ def plot_relative_risk_distribution(simulated_rr, observed_rr):
 
 
 ###############################################################################################################################
-#Correlation Resampling 
+#Correlation Resampling
 
-##FINAL CODE FOR CORRELATION 
+##FINAL CODE FOR CORRELATION
 
 import numpy as np
 from scipy.stats import pearsonr
@@ -439,7 +439,7 @@ def calculate_p_value(sims, corr_obs, two_tailed=False):
 def plot_null_distribution(sims, corr_obs, two_tailed=False):
     """
     Plot the null distribution of simulated correlation coefficients and the observed correlation.
-    
+
     Parameters:
     - sims (np.array): Simulated correlation coefficients.
     - corr_obs (float): Observed correlation coefficient.
@@ -460,12 +460,12 @@ def plot_null_distribution(sims, corr_obs, two_tailed=False):
 def permute_correlation(x, y, num_simulations=10000):
     """
     Generate simulated correlation coefficients by permuting one variable and calculating Pearson's correlation.
-    
+
     Parameters:
     - x (np.array): Values of variable 1.
     - y (np.array): Values of variable 2.
     - num_simulations (int, optional): Number of permutations to perform (default 10000).
-    
+
     Returns:
     - np.array: Simulated correlation coefficients.
     """
@@ -486,7 +486,7 @@ def compute_correlation_ci(x, y, num_simulations=10000, confidence_interval=0.95
     """
     Compute the confidence interval around the observed correlation by resampling the dataset
     and plotting the distribution of correlation coefficients from the resampled datasets with error handling.
-    
+
     Parameters:
     - x (np.array): Values of variable 1.
     - y (np.array): Values of variable 2.
@@ -496,18 +496,18 @@ def compute_correlation_ci(x, y, num_simulations=10000, confidence_interval=0.95
     try:
         observed_correlation = pearsonr(x, y)[0]
         simulated_correlations = []
-        
+
         for _ in range(num_simulations):
             indices = np.random.choice(np.arange(len(x)), size=len(x), replace=True)
             resampled_x = x[indices]
             resampled_y = y[indices]
             resample_correlation = pearsonr(resampled_x, resampled_y)[0]
             simulated_correlations.append(resample_correlation)
-        
+
         simulated_correlations = np.array(simulated_correlations)
         lower_bound = np.percentile(simulated_correlations, (1 - confidence_interval) / 2 * 100)
         upper_bound = np.percentile(simulated_correlations, (1 + confidence_interval) / 2 * 100)
-        
+
         plt.figure(figsize=(10, 6))
         sns.histplot(simulated_correlations, kde=True, color="blue", stat="density", linewidth=0)
         plt.axvline(observed_correlation, color='red', linestyle='--', label='Observed Correlation')
@@ -532,7 +532,7 @@ import numpy as np
 def resample_one_group_count(box, sample_stat, sample_size, count_what="A", two_tailed=True, sims=10000, proportion=False, return_resamples=False):
     """
     Calculate a p-value for a count or proportion. Used to compare a sample to a population/base rate.
-    
+
     Parameters:
         box (np array or list): Box model representing population
         sample_stat (float): Statistic for the sample
@@ -542,7 +542,7 @@ def resample_one_group_count(box, sample_stat, sample_size, count_what="A", two_
         sims (int): How many simulations to run. Default 10,000
         proportion (bool): Calculate count or proportion (default count)
         return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
-    
+
     Returns:
         p-value
         resampling data (if desired)
@@ -558,14 +558,14 @@ def resample_one_group_count(box, sample_stat, sample_size, count_what="A", two_
         if proportion:
             p_count = p_count/sample_size
         resampleArr[i] = p_count
-    
+
     #Compute p-value
     if proportion:
         observed = np.sum(dataArr == count_what)
     else:
         observed = np.mean(dataArr == count_what)
     p = p_value_resampled(observed_data = sample_stat, simulated_data = resampleArr, two_tailed=two_tailed)
-    
+
     #Return results
     if return_resamples:
         return p, resampleArr
@@ -576,7 +576,7 @@ def resample_one_group_count(box, sample_stat, sample_size, count_what="A", two_
 def confidence_interval_count(box, sample_size, confidence_level=99, count_what="A", sims=10000, pivotal=True, proportion=False, return_resamples=False):
     """
     Calculate percentile confidence interval for a count or proportion.
-    
+
     Parameters:
         box (np array or list): Box model representing population
         sample_size (int): Number of individuals (or sites, etc.) in sample
@@ -586,19 +586,19 @@ def confidence_interval_count(box, sample_size, confidence_level=99, count_what=
         pivotal (bool): Whether to compute a pivotal confidence interval (default True). If False, percentile will be used.
         proportion (bool): Calculate count or proportion (default count)
         return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
-    
+
     Returns:
         confidence interval (as numpy array)
         resampling data (if desired)
     """
-    
+
     dataArr = np.array(box)  #Converts box model to Numpy array
-    
+
     if pivotal==True and proportion==False:  #Percentile CIs don't use Mobs
         Mobs = np.sum(dataArr==count_what)
     elif pivotal==True and proportion==True:
         Mobs = np.mean(dataArr==count_what)
-        
+
     #Resampling loop
     resampleArr = np.zeros(sims)
     for i in range(sims):
@@ -607,7 +607,7 @@ def confidence_interval_count(box, sample_size, confidence_level=99, count_what=
         if proportion:  #Convert to proportions if desired
             p_count = p_count/sample_size
         resampleArr[i] = p_count
-   
+
     #Compute confidence interval
     CIpercentile = np.percentile(resampleArr, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
     if pivotal:
@@ -615,7 +615,7 @@ def confidence_interval_count(box, sample_size, confidence_level=99, count_what=
         CI = CIpivotal
     else:
         CI = CIpercentile
-      
+
     #Return results
     if return_resamples:
         return CI, resampleArr
@@ -626,11 +626,11 @@ def confidence_interval_count(box, sample_size, confidence_level=99, count_what=
 def CI_percentile_to_pivotal(Mobs, CIpercentile):
     """
     Convert percentile confidence interval to pivotal confidence interval.
-    
+
     Parameters:
         Mobs (float): Measured quantity you want to put a CI on (mean, median, etc.)
         CIpercentile (list or Numpy array): Percentile CI
-    
+
     Returns:
         Confidence interval (Numpy array)
     """
@@ -640,7 +640,7 @@ def CI_percentile_to_pivotal(Mobs, CIpercentile):
 def confidence_interval_one_sample(data, measure_function, confidence_level=99, sims=10000, pivotal=True, return_resamples=False):
     """
     Calculates a confidence interval for a measure on a 1-D array based on the specified confidence level.
-    
+
     Parameters:
         data (list or np.array): 1-D array or list of numeric data
         measure function (function name): A function that returns your measure, such as np.median or a custom function
@@ -648,7 +648,7 @@ def confidence_interval_one_sample(data, measure_function, confidence_level=99, 
         sims (int): How many simulations to run. Default 10,000
         pivotal (bool): Whether to compute a pivotal confidence interval (default True). If False, percentile will be used.
         return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
-    
+
     Returns:
         confidence interval (as numpy array)
         resampling data (if desired)
@@ -665,7 +665,7 @@ def confidence_interval_one_sample(data, measure_function, confidence_level=99, 
         p_sample = np.random.choice(dataArr, len(dataArr), replace=True)  #Samples from the data (with replacement)
         p_measure = measure_function(p_sample)
         resampleArr[i] = p_measure
-      
+
     #Compute confidence interval
     CIpercentile = np.percentile(resampleArr, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
     if pivotal:
@@ -673,14 +673,14 @@ def confidence_interval_one_sample(data, measure_function, confidence_level=99, 
         CI = CIpivotal
     else:
         CI = CIpercentile
-    
+
     #Return results
     if return_resamples:
         return CI, resampleArr
     else:
         return CI
 
-    
+
 ########################################################################################################################################
 
 #Paired data
@@ -688,18 +688,18 @@ def confidence_interval_one_sample(data, measure_function, confidence_level=99, 
 def paired_plot(data, group_labels=["", ""], line_color="gray", point_color="black"):
     """
     Plots connected dot plots for 2 groups of paired data and lines
-    
+
     Inputs:
         data: two-column array or data frame of paired data points
         group_labels: list of what each group should be labeled (default unlabeled)
         line_color: color of connecting lines (default gray)
         point_color: color of points (default black)
-    
+
     Output:
         ax: connected dot plot
-    
+
     """
-    
+
     dataArr = np.array(data)
     fig, ax = plt.subplots(figsize=(4, 3))
 
@@ -723,19 +723,19 @@ def paired_plot(data, group_labels=["", ""], line_color="gray", point_color="bla
 def paired_sample_pvalue(deltas, measure_function, sims=10000, return_resamples=False):
     """
     Computes a p-value for paired data
-    
+
     Inputs:
         deltas (list or 1-D array): differences between paired measurements
         measure_function (function): function that computed measure of central tendency for the deltas. Typically np.mean or np.median.
         sims (int): How many simulations to run. Default 10,000
         return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
-    
-    Outputs: 
+
+    Outputs:
         p-value (two-tailed)
         resamples (numpy array) if desired
     """
     Mobs = measure_function(deltas)
-    
+
     p_diffs_arr=np.zeros(sims)
     for i in range(sims):
         ones_arr=np.random.choice([1,-1], len(deltas))  #Randomly make each delta + or -
@@ -744,7 +744,7 @@ def paired_sample_pvalue(deltas, measure_function, sims=10000, return_resamples=
 
     pval=p_value_resampled(Mobs, p_diffs_arr, two_tailed=True)
     if return_resamples == True:
-        return pval, sims
+        return pval, p_diffs_arr
     else:
         return pval
 
@@ -765,30 +765,30 @@ def bootstrap_confidence_interval(x, y, n_bootstrap=1000, confidence_level=99, r
     alpha = 100 - confidence_level
     percentile_lower = alpha / 2
     percentile_upper = 100 - alpha / 2
-    
+
     # Resampling and fitting
     for i in range(n_bootstrap):
         sample_indices = np.random.choice(range(n), size=n, replace=True)
         x_sample = x[sample_indices]
         y_sample = y[sample_indices]
-        
+
         # Using scipy.stats.linregress
         slope, intercept, r_value, p_value, std_err = linregress(x_sample, y_sample)
         slopes.append(slope)
         intercepts.append(intercept)
-    
+
     # Preparing the output
     result = {}
     if return_type in ('slope', 'both'):
         slope_lower_bound = np.percentile(slopes, percentile_lower)
         slope_upper_bound = np.percentile(slopes, percentile_upper)
         result['slope'] = (slope_lower_bound, slope_upper_bound)
-    
+
     if return_type in ('intercept', 'both'):
         intercept_lower_bound = np.percentile(intercepts, percentile_lower)
         intercept_upper_bound = np.percentile(intercepts, percentile_upper)
         result['intercept'] = (intercept_lower_bound, intercept_upper_bound)
-    
+
     return result
 
 # Example usage
@@ -807,7 +807,7 @@ from sklearn.linear_model import LinearRegression
 def plot_bootstrap_lines(x, y, n_bootstrap=1000, original_slope=2, original_intercept=0):
     slopes = []
     intercepts = []
-    
+
     # Bootstrap resampling and linear regression fitting
     for i in range(n_bootstrap):
         sample_indices = np.random.choice(range(len(x)), size=len(x), replace=True)
@@ -816,20 +816,20 @@ def plot_bootstrap_lines(x, y, n_bootstrap=1000, original_slope=2, original_inte
         model = LinearRegression().fit(x_sample.reshape(-1, 1), y_sample)
         slopes.append(model.coef_[0])
         intercepts.append(model.intercept_)
-    
+
     # Plotting data points
     plt.figure(figsize=(10, 6))
     plt.scatter(x, y, alpha=0.5, label='Data Points')
-    
+
     # Plotting lines for a subset of bootstrap samples
     for i in range(min(100, len(slopes))):  # Plot lines for 100 bootstrap samples
         y_pred = slopes[i] * x + intercepts[i]
         plt.plot(x, y_pred, color='grey', alpha=0.2, linewidth=1)
-    
+
     # Plotting original line for comparison
     y_original = original_slope * x + original_intercept
     plt.plot(x, y_original, color='red', label='Original Line', linewidth=2)
-    
+
     plt.xlabel('X')
     plt.ylabel('Y')
     plt.title('Bootstrap Regression Lines')
@@ -905,4 +905,3 @@ def power_analysis(obs_diff, group1, group2, num_simulations=1000, alpha=0.01, p
 
     required_sample_sizes = (sample_size_group1, sample_size_group2)
     return required_sample_sizes, achieved_power
-
