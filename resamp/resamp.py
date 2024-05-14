@@ -794,36 +794,57 @@ import numpy as np
 import pandas as pd
 from scipy.stats import linregress
 
-def bootstrap_confidence_interval(x, y, n_bootstrap=1000, confidence_level=99, return_type='both'):
+def regression_ci(x, y, sims=10000, confidence_level=99, return_type='both', pivotal=True):
+    """
+    Computes a confidence interval for a linear regression (slope, intercept, or both) via resampling.
+
+    Inputs:
+        *x and y: lists or 1-D arrays of data
+        *sims (int): number of resampling runs (default: 10,000)
+        *confidence_level (float): desired confidence level (default: 99)
+        *return_type (string): whether to return CIs for "slope", "intercept", or "both" (default: "both")
+        *pivotal (bool): whether to compute a pivotal CI (default: True)
+
+    Output:
+        *dict of slope and/or intercept CIs (as tuples)
+    """
+    
     slopes = []
     intercepts = []
     n = len(x)
     alpha = 100 - confidence_level
     percentile_lower = alpha / 2
     percentile_upper = 100 - alpha / 2
-
+    
     # Resampling and fitting
-    for i in range(n_bootstrap):
+    for i in range(sims):
         sample_indices = np.random.choice(range(n), size=n, replace=True)
         x_sample = x[sample_indices]
         y_sample = y[sample_indices]
-
+        
         # Using scipy.stats.linregress
         slope, intercept, r_value, p_value, std_err = linregress(x_sample, y_sample)
         slopes.append(slope)
         intercepts.append(intercept)
-
+    
     # Preparing the output
     result = {}
+    if pivotal:
+        obs_slope, obs_intercept, *others = linregress(x,y)
+
     if return_type in ('slope', 'both'):
         slope_lower_bound = np.percentile(slopes, percentile_lower)
         slope_upper_bound = np.percentile(slopes, percentile_upper)
         result['slope'] = (slope_lower_bound, slope_upper_bound)
-
+        if pivotal:
+            result['slope'] = CI_percentile_to_pivotal(obs_slope, result['slope'])
+    
     if return_type in ('intercept', 'both'):
         intercept_lower_bound = np.percentile(intercepts, percentile_lower)
         intercept_upper_bound = np.percentile(intercepts, percentile_upper)
         result['intercept'] = (intercept_lower_bound, intercept_upper_bound)
+        if pivotal:
+            result['intercept'] = CI_percentile_to_pivotal(obs_slope, result['intercept'])
 
     return result
 
