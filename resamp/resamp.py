@@ -2,8 +2,8 @@
 
 ### ACTIVE FINAL SCRIPT
 
-## VERSION - 1.6.10 - edited p_value_resampled to be two-tailed, not loaded to Team project or pip
-## DATE: 30 APRIL 2024 
+## VERSION - 1.6.10 - Kristin edited p_value_resampled to work if M_obs < 0 for two-tailed
+## DATE: 11 May 2024 
 ## AUTHOR: VISHANTH HARI RAJ, JANE SHEVTSOV, KRISTIN MCCULLY
 ## SUPERVISOR: JANE SHEVTSOV
 
@@ -156,7 +156,7 @@ def resample_chi_abs(observed_data, sims=10000, with_replacement=True):
     Generates a bootstrap distribution of the chi absolute statistic for an n*n contingency table.
 
     Parameters:
-        observed_data (np.array or pd.DataFrame): n*n contingency table with observed frequencies.
+        observed_data (np.array or pd.DataFrame): n*n contingency table with observed frequencies with treatments in columns and outcomes in rows.
         num_simulations (int): Number of bootstrap samples to generate.
         with_replacement (bool): Indicates whether sampling should be with replacement.
      """
@@ -165,7 +165,7 @@ def resample_chi_abs(observed_data, sims=10000, with_replacement=True):
         observed_data = observed_data.values
 
     total_rows, total_columns = observed_data.shape
-    expected_data = calculate_expected(observed_data)
+    expected_data = calculate_expected(observed_data) # Requires treatments in columns and outcomes in rows - TODO - allow input of expected table that is set up differently?
 
     results = np.zeros(sims)
     total_counts_per_column = observed_data.sum(axis=0)
@@ -191,7 +191,6 @@ def resample_chi_abs(observed_data, sims=10000, with_replacement=True):
 
 
 #This should be the canonical function for p-values in resamp
-# Edited by Kristin 4/30/2024 to calculate 2nd tail
 def p_value_resampled(observed_stat, simulated_stats, two_tailed=True):
     """
     Calculates the p-value for a statistic using bootstrap methods, 
@@ -216,15 +215,15 @@ def p_value_resampled(observed_stat, simulated_stats, two_tailed=True):
                 tail_proportion = np.mean(simulated_stats >= observed_stat) + np.mean(simulated_stats <= -observed_stat)
             else:
                 # For a two-tailed test, consider both tails of the distribution (left side logic)
-                tail_proportion = np.mean(simulated_stats <= observed_stat) + np.mean(simulated_stats >= observed_stat)
+                tail_proportion = np.mean(simulated_stats <= observed_stat) + np.mean(simulated_stats >= -observed_stat) # FROM KRISTIN: Added - to second calculation
             p_value = tail_proportion
         else:
             if is_right_side:
                 # For a one-tailed test, only consider the tail of interest (right side logic)
-                p_value = np.mean(simulated_data >= observed_data)
+                p_value = np.mean(simulated_stats >= observed_stat)
             else:
                 # For a one-tailed test, only consider the tail of interest (left side logic)
-                p_value = np.mean(simulated_data <= observed_data)
+                p_value = np.mean(simulated_stats <= observed_stat)
         return p_value
     except Exception as e:
         logging.error("Error in calculating p-value: ", exc_info=True)
@@ -293,14 +292,14 @@ def relative_risk(observed_data, event_row_index, treatment1_index, treatment2_i
     return relative_risk
 
 
-def resample_relative_risk(observed_data, event_row_index, reference_treatment_index=0, sims=10000):
+def resample_relative_risk(observed_data, event_row_index, baseline_index=0, sims=10000):
     """
     Resamples relative risk from observed data
     
     Inputs:
-        observed_data (array or data frame): table of counts
+        observed_data (array or data frame): 2x2 table of counts
         event_row_index (int): which row contains event of interest
-        reference_treatment_index (int): which column is the baseline for comparison
+        baseline_index (int): which column is the baseline for comparison
         sims (int): number of resampling simulations to run
     
     Returns:
@@ -310,6 +309,8 @@ def resample_relative_risk(observed_data, event_row_index, reference_treatment_i
     
     # Extract the dimensions of the observed_data array
     total_rows, total_columns = observed_data.shape
+    if total_rows > 2 or total_columns>2:
+        raise ValueError ("This function only works for 2x2 arrays")
     
     # Calculate the total counts for each column (by group)
     total_counts_per_column = observed_data.sum(axis=0)
@@ -333,14 +334,14 @@ def resample_relative_risk(observed_data, event_row_index, reference_treatment_i
             simulated_sample[1, col] = np.sum(column_sample == 0)
             simulated_sample[0, col] = np.sum(column_sample == 1)
 
-        # Calculate the probability of the event for the reference treatment group
-        prob_event_treatment1 = simulated_sample[event_row_index, reference_treatment_index] / total_counts_per_column[reference_treatment_index]
+        # Calculate the probability of the event for the baseline group
+        prob_event_baseline = simulated_sample[event_row_index, baseline_index] / total_counts_per_column[baseline_index]
         
         # Calculate the probability of the event for the other treatment group
-        prob_event_other_treatment = simulated_sample[event_row_index, 1 - reference_treatment_index] / total_counts_per_column[1 - reference_treatment_index]
+        prob_event_other = simulated_sample[event_row_index, 1 - baseline_index] / total_counts_per_column[1 - baseline_index]
         
         # Calculate the Risk Ratio (RR) for the current simulated dataset and store it
-        simulated_rr[i] = prob_event_treatment1 / prob_event_other_treatment
+        simulated_rr[i] = prob_event_other / prob_event_baseline
 
     # Return an array of simulated RR values
     return simulated_rr
@@ -486,14 +487,14 @@ def plot_null_distribution(sims, corr_obs, two_tailed=False):
         print(f"Error plotting null distribution: {e}")
 
 
-def permute_correlation(x, y, num_simulations=10000):
+def permute_correlation(x, y, sims=10000):
     """
     Generate simulated correlation coefficients by permuting one variable and calculating Pearson's correlation.
     
     Parameters:
     - x (np.array): Values of variable 1.
     - y (np.array): Values of variable 2.
-    - num_simulations (int, optional): Number of permutations to perform (default 10000).
+    - sims (int, optional): Number of permutations to perform (default 10000).
     
     Returns:
     - np.array: Simulated correlation coefficients.
@@ -501,8 +502,8 @@ def permute_correlation(x, y, num_simulations=10000):
     try:
         x = np.asarray(x)
         y = np.asarray(y)
-        simulated_correlations = np.zeros(num_simulations)
-        for i in range(num_simulations):
+        simulated_correlations = np.zeros(sims)
+        for i in range(sims):
             permuted_x = np.random.permutation(x)
             simulated_correlations[i] = pearsonr(permuted_x, y)[0]
         return simulated_correlations
@@ -511,44 +512,37 @@ def permute_correlation(x, y, num_simulations=10000):
         return np.array([])  # Return an empty array in case of error
 
 
-def compute_correlation_ci(x, y, num_simulations=10000, confidence_interval=0.95):
+def compute_correlation_ci(x, y, sims=10000, confidence_level=99, pivotal=True):
     """
-    Compute the confidence interval around the observed correlation by resampling the dataset
-    and plotting the distribution of correlation coefficients from the resampled datasets with error handling.
+    Compute the confidence interval around the observed correlation by resampling.
     
     Parameters:
     - x (np.array): Values of variable 1.
     - y (np.array): Values of variable 2.
-    - num_simulations (int, optional): Number of bootstrap samples to generate (default 10000).
-    - confidence_interval (float, optional): Confidence level for the interval (default 0.95).
+    - sims (int, optional): Number of bootstrap samples to generate (default: 10000).
+    - confidence_level (float, optional): Confidence level for the interval (default: 99).
+    - pivotal (bool, optional): Whether to return a pivotal confidence interval (default: True).
     """
     try:
-        observed_correlation = pearsonr(x, y)[0]
-        simulated_correlations = []
+        Mobs = pearsonr(x, y)[0]
+        simulated_correlations = np.zeros(sims)
         
-        for _ in range(num_simulations):
+        for i in range(sims):
             indices = np.random.choice(np.arange(len(x)), size=len(x), replace=True)
             resampled_x = x[indices]
             resampled_y = y[indices]
             resample_correlation = pearsonr(resampled_x, resampled_y)[0]
-            simulated_correlations.append(resample_correlation)
+            simulated_correlations[i]=resample_correlation
         
-        simulated_correlations = np.array(simulated_correlations)
-        lower_bound = np.percentile(simulated_correlations, (1 - confidence_interval) / 2 * 100)
-        upper_bound = np.percentile(simulated_correlations, (1 + confidence_interval) / 2 * 100)
+        CIpercentile = np.percentile(simulated_correlations, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
+        if pivotal:
+            CIpivotal = np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
+            CI = CIpivotal
+        else:
+            CI = CIpercentile
         
-        plt.figure(figsize=(10, 6))
-        sns.histplot(simulated_correlations, kde=True, color="blue", stat="density", linewidth=0)
-        plt.axvline(observed_correlation, color='red', linestyle='--', label='Observed Correlation')
-        plt.axvline(lower_bound, color='green', linestyle='-', label=f'{confidence_interval*100:.0f}% CI Lower Bound')
-        plt.axvline(upper_bound, color='green', linestyle='-', label=f'{confidence_interval*100:.0f}% CI Upper Bound')
-        plt.title('Distribution of Simulated Correlations with Confidence Interval')
-        plt.xlabel("Correlation Coefficient")
-        plt.ylabel("Density")
-        plt.legend()
-        plt.show()
-        print("Observed Correlation:", observed_correlation)
-        print(f"{confidence_interval*100:.0f}% Confidence Interval: ({lower_bound:.3f}, {upper_bound:.3f})")
+        return CI
+        
     except Exception as e:
         print(f"An error occurred: {e}")
 
@@ -773,7 +767,7 @@ def paired_sample_pvalue(deltas, measure_function, sims=10000, return_resamples=
 
     pval=p_value_resampled(Mobs, p_diffs_arr, two_tailed=True)
     if return_resamples == True:
-        return pval, sims
+        return pval, p_diffs_arr
     else:
         return pval
 
