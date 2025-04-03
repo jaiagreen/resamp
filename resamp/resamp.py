@@ -600,7 +600,7 @@ def resample_one_group_count(box, sample_stat, sample_size, count_what="A", two_
         observed = np.sum(dataArr == count_what)
     else:
         observed = np.mean(dataArr == count_what)
-    p = p_value_resampled(observed_data = sample_stat, simulated_data = resampleArr, two_tailed=two_tailed)
+    p = p_value_resampled(observed_stat = sample_stat, simulated_stats = resampleArr, two_tailed=two_tailed)
 
     #Return results
     if return_resamples:
