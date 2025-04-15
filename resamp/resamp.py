@@ -16,9 +16,64 @@ import os
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+# CORE FUNCTIONS
 
-##MAD FUNCTION Median Absolute Deviation
+#This should be the canonical function for p-values in resamp
+def p_value_resampled(observed_stat, simulated_stats, two_tailed=True):
+    """
+    Calculates the p-value for a statistic using bootstrap methods,
+    determining first if the observed statistic lies on the left or right side of the distribution's mean.
 
+    Parameters:
+        observed_stat (float): The observed statistic.
+        simulated_stats (np.array): The array of resampled statistics.
+        two_tailed (bool): If True, perform a two-tailed test; otherwise, do one-tailed. Defaults to True.
+
+    Returns:
+        p (float): The p-value.
+    """
+    try:
+        # Determine the side of the distribution where the observed data lies
+        mean_simulated_stats = np.mean(simulated_stats)
+        is_right_side = observed_stat > mean_simulated_stats
+
+        if two_tailed:
+            if is_right_side:
+                # For a two-tailed test, consider both tails of the distribution (right side logic)
+                tail_proportion = np.mean(simulated_stats >= observed_stat) + np.mean(simulated_stats <= -observed_stat)
+            else:
+                # For a two-tailed test, consider both tails of the distribution (left side logic)
+                tail_proportion = np.mean(simulated_stats <= observed_stat) + np.mean(simulated_stats >= -observed_stat) # FROM KRISTIN: Added - to second calculation
+            p_value = tail_proportion
+        else:
+            if is_right_side:
+                # For a one-tailed test, only consider the tail of interest (right side logic)
+                p_value = np.mean(simulated_stats >= observed_stat)
+            else:
+                # For a one-tailed test, only consider the tail of interest (left side logic)
+                p_value = np.mean(simulated_stats <= observed_stat)
+        return p_value
+    except Exception as e:
+        logging.error("Error in calculating p-value: ", exc_info=True)
+        return None
+
+
+def read_data(input_data):
+    # Function to read data from either a file path or DataFrame
+    if isinstance(input_data, pd.DataFrame):
+        data = input_data.copy()
+    else:
+        _, file_extension = os.path.splitext(input_data)
+        if file_extension in ['.xls', '.xlsx']:
+            data = pd.read_excel(input_data, index_col=0)
+        elif file_extension == '.csv':
+            data = pd.read_csv(input_data, index_col=0)
+        else:
+            raise ValueError("Unsupported file type")
+    return data.apply(pd.to_numeric, errors='coerce')
+
+
+#Median Absolute Deviation 
 def median_absolute_deviation(data):
     """
     Calculate the Median Absolute Deviation (MAD) of a 1D dataset.
@@ -49,27 +104,233 @@ def median_absolute_deviation(data):
     except Exception as e:
         return f"An error occurred: {e}"
 
-# test_data = [15, 26, 30, 40, 55]
-# mad = median_absolute_deviation(test_data)
-# print(mad)
+
+def CI_percentile_to_pivotal(Mobs, CIpercentile):
+    """
+    Convert percentile confidence interval to pivotal confidence interval.
+
+    Parameters:
+        Mobs (float): Measured quantity you want to put a CI on (mean, median, etc.)
+        CIpercentile (list or Numpy array): Percentile CI
+
+    Returns:
+        Confidence interval (Numpy array)
+    """
+    return np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
+
+
 
 ###############################################################################################################################
+# 1-Sample Tests
 
-def read_data(input_data):
-    # Function to read data from either a file path or DataFrame
-    if isinstance(input_data, pd.DataFrame):
-        data = input_data.copy()
+def resample_one_group_count(box, sample_stat, sample_size, count_what="A", two_tailed=True, sims=10000, proportion=False, return_resamples=False):
+    """
+    Calculate a p-value for a count or proportion. Used to compare a sample to a population/base rate.
+
+    Parameters:
+        box (np array or list): Box model representing population
+        sample_stat (float): Statistic for the sample
+        sample_size (int): Number of individuals (or sites, etc.) in sample
+        count_what (char): What character in the box model should be counted. Default "A".
+        two_tailed (bool): Whether to compute a two-tailed p-value. If False, do one-tailed.
+        sims (int): How many simulations to run. Default 10,000
+        proportion (bool): Calculate count or proportion (default count)
+        return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
+
+    Returns:
+        p-value
+        resampling data (if desired)
+    """
+
+    dataArr = np.array(box)  #Converts box model to NumPy array
+
+    #Resampling loop
+    resampleArr = np.zeros(sims)  #Preallocates array to store resampling results
+    for i in range(sims):
+        p_sample = np.random.choice(dataArr, sample_size, replace=True)  #Samples from the box model (with replacement)
+        p_count = np.sum(p_sample == count_what)
+        if proportion:
+            p_count = p_count/sample_size
+        resampleArr[i] = p_count
+
+    #Compute p-value
+    if proportion:
+        observed = np.sum(dataArr == count_what)
     else:
-        _, file_extension = os.path.splitext(input_data)
-        if file_extension in ['.xls', '.xlsx']:
-            data = pd.read_excel(input_data, index_col=0)
-        elif file_extension == '.csv':
-            data = pd.read_csv(input_data, index_col=0)
-        else:
-            raise ValueError("Unsupported file type")
-    return data.apply(pd.to_numeric, errors='coerce')
+        observed = np.mean(dataArr == count_what)
+    p = p_value_resampled(observed_stat = sample_stat, simulated_stats = resampleArr, two_tailed=two_tailed)
+
+    #Return results
+    if return_resamples:
+        return p, resampleArr
+    else:
+        return p
 
 
+def confidence_interval_count(box, sample_size, confidence_level=99, count_what="A", sims=10000, pivotal=True, proportion=False, return_resamples=False):
+    """
+    Calculate percentile confidence interval for a count or proportion.
+
+    Parameters:
+        box (np array or list): Box model representing population
+        sample_size (int): Number of individuals (or sites, etc.) in sample
+        confidence_level (float): The level of confidence interval you want (95%, 99%, etc.) This needs to be a number between 0 and 100.
+        count_what (char): What character in the box model should be counted. Default "A".
+        sims (int): How many simulations to run. Default 10,000
+        pivotal (bool): Whether to compute a pivotal confidence interval (default True). If False, percentile will be used.
+        proportion (bool): Calculate count or proportion (default count)
+        return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
+
+    Returns:
+        confidence interval (as numpy array)
+        resampling data (if desired)
+    """
+
+    dataArr = np.array(box)  #Converts box model to Numpy array
+
+    if pivotal==True and proportion==False:  #Percentile CIs don't use Mobs
+        Mobs = np.sum(dataArr==count_what)
+    elif pivotal==True and proportion==True:
+        Mobs = np.mean(dataArr==count_what)
+
+    #Resampling loop
+    resampleArr = np.zeros(sims)
+    for i in range(sims):
+        p_sample = np.random.choice(dataArr, sample_size, replace=True)  #Samples from the box model (with replacement)
+        p_count = np.sum(p_sample == count_what)
+        if proportion:  #Convert to proportions if desired
+            p_count = p_count/sample_size
+        resampleArr[i] = p_count
+
+    #Compute confidence interval
+    CIpercentile = np.percentile(resampleArr, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
+    if pivotal:
+        CIpivotal = np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
+        CI = CIpivotal
+    else:
+        CI = CIpercentile
+
+    #Return results
+    if return_resamples:
+        return CI, resampleArr
+    else:
+        return CI
+
+
+def confidence_interval_one_sample(data, measure_function, confidence_level=99, sims=10000, pivotal=True, return_resamples=False):
+    """
+    Calculates a confidence interval for a measure on a 1-D array based on the specified confidence level.
+
+    Parameters:
+        data (list or np.array): 1-D array or list of numeric data
+        measure function (function name): A function that returns your measure, such as np.median or a custom function
+        confidence_level (float): The confidence level expressed as a percentage. Defaults to 99.
+        sims (int): How many simulations to run. Default 10,000
+        pivotal (bool): Whether to compute a pivotal confidence interval (default True). If False, percentile will be used.
+        return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
+
+    Returns:
+        confidence interval (as numpy array)
+        resampling data (if desired)
+    """
+    # Ensure data is a numpy array for efficient operations
+    dataArr = np.array(data)
+
+    #Get sample measure
+    Mobs = measure_function(dataArr)
+
+    #Resampling loop
+    resampleArr = np.zeros(sims)
+    for i in range(sims):
+        p_sample = np.random.choice(dataArr, len(dataArr), replace=True)  #Samples from the data (with replacement)
+        p_measure = measure_function(p_sample)
+        resampleArr[i] = p_measure
+
+    #Compute confidence interval
+    CIpercentile = np.percentile(resampleArr, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
+    if pivotal:
+        CIpivotal = np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
+        CI = CIpivotal
+    else:
+        CI = CIpercentile
+
+    #Return results
+    if return_resamples:
+        return CI, resampleArr
+    else:
+        return CI
+
+
+################################################################################################################################
+#TWO-GROUP COMPARISONS
+
+def paired_plot(data, group_labels=["", ""], line_color="gray", point_color="black"):
+    """
+    Plots connected dot plots for 2 groups of paired data and lines
+
+    Inputs:
+        data: two-column array or data frame of paired data points
+        group_labels: list of what each group should be labeled (default unlabeled)
+        line_color: color of connecting lines (default gray)
+        point_color: color of points (default black)
+
+    Output:
+        ax: connected dot plot
+
+    """
+
+    dataArr = np.array(data)
+    fig, ax = plt.subplots(figsize=(4, 3))
+
+    x1=0.8
+    x2=1.2
+    n = dataArr.shape[0]
+    for i in range(n):
+        ax.plot([x1, x2], [dataArr[i,0], dataArr[i,1]], color=line_color)
+
+        # Plot the points
+        ax.scatter(n*[x1-0.01], dataArr[:,0], color=point_color, s=25, label=group_labels[0])
+        ax.scatter(n*[x2+0.01], dataArr[:,1], color=point_color, s=25, label=group_labels[1])
+
+    # Fix the axes and labels
+    ax.set_xticks([x1, x2])
+    _ = ax.set_xticklabels(group_labels, fontsize='x-large')
+
+    return ax
+
+
+def paired_sample_pvalue(deltas, measure_function, sims=10000, return_resamples=False):
+    """
+    Computes a p-value for paired data
+
+    Inputs:
+        deltas (list or 1-D array): differences between paired measurements
+        measure_function (function): function that computed measure of central tendency for the deltas. Typically np.mean or np.median.
+        sims (int): How many simulations to run. Default 10,000
+        return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
+
+    Outputs:
+        p-value (two-tailed)
+        resamples (numpy array) if desired
+    """
+    Mobs = measure_function(deltas)
+
+    p_diffs_arr=np.zeros(sims)
+    for i in range(sims):
+        ones_arr=np.random.choice([1,-1], len(deltas))  #Randomly make each delta + or -
+        p_diffs=deltas*ones_arr
+        p_diffs_arr[i]=measure_function(p_diffs)
+
+    pval=p_value_resampled(Mobs, p_diffs_arr, two_tailed=True)
+    if return_resamples == True:
+        return pval, p_diffs_arr
+    else:
+        return pval
+
+
+
+###############################################################################################################################
+#CATEGORICAL DATA
 def compare_dimensions(observed, expected):
     if observed.shape != expected.shape:
         raise ValueError("Dimensions of observed and expected data do not match")
@@ -190,44 +451,6 @@ def resample_chi_abs(observed_data, sims=10000, with_replacement=True):
     return results
 
 
-#This should be the canonical function for p-values in resamp
-def p_value_resampled(observed_stat, simulated_stats, two_tailed=True):
-    """
-    Calculates the p-value for a statistic using bootstrap methods,
-    determining first if the observed statistic lies on the left or right side of the distribution's mean.
-
-    Parameters:
-        observed_stat (float): The observed statistic.
-        simulated_stats (np.array): The array of resampled statistics.
-        two_tailed (bool): If True, perform a two-tailed test; otherwise, do one-tailed. Defaults to True.
-
-    Returns:
-        p (float): The p-value.
-    """
-    try:
-        # Determine the side of the distribution where the observed data lies
-        mean_simulated_stats = np.mean(simulated_stats)
-        is_right_side = observed_stat > mean_simulated_stats
-
-        if two_tailed:
-            if is_right_side:
-                # For a two-tailed test, consider both tails of the distribution (right side logic)
-                tail_proportion = np.mean(simulated_stats >= observed_stat) + np.mean(simulated_stats <= -observed_stat)
-            else:
-                # For a two-tailed test, consider both tails of the distribution (left side logic)
-                tail_proportion = np.mean(simulated_stats <= observed_stat) + np.mean(simulated_stats >= -observed_stat) # FROM KRISTIN: Added - to second calculation
-            p_value = tail_proportion
-        else:
-            if is_right_side:
-                # For a one-tailed test, only consider the tail of interest (right side logic)
-                p_value = np.mean(simulated_stats >= observed_stat)
-            else:
-                # For a one-tailed test, only consider the tail of interest (left side logic)
-                p_value = np.mean(simulated_stats <= observed_stat)
-        return p_value
-    except Exception as e:
-        logging.error("Error in calculating p-value: ", exc_info=True)
-        return None
 
 
 def plot_chi_abs_distribution(simulated_data, observed_data, p_value):
@@ -254,21 +477,6 @@ def plot_chi_abs_distribution(simulated_data, observed_data, p_value):
     plt.legend(['Simulated Chi Absolute','Observed Chi Absolute'])
     plt.show()
 
-
-##############################################################################################################################
-
-#CALCULATION OF RISK, (SIM DATA VS OBSERVED DATA) CONFIDENCE INTERVAL, PLOT GRAPH
-# Relative Risk of two treatments
-# ProbCalculation
-# Confidence Interval
-# Plotting the Graph
-
-# VERSION - 1
-
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
 
 def relative_risk(observed_data, event_row_index, treatment1_index, treatment2_index):
     """
@@ -449,14 +657,7 @@ def plot_relative_risk_distribution(simulated_rr, observed_rr):
 
 
 ###############################################################################################################################
-#Correlation Resampling
-
-##FINAL CODE FOR CORRELATION
-
-import numpy as np
-from scipy.stats import pearsonr
-import seaborn as sns
-import matplotlib.pyplot as plt
+#Correlation and Regression
 
 # Function to calculate the p-value based on simulated data and observed correlation
 def calculate_p_value(sims, corr_obs, two_tailed=False):
@@ -560,239 +761,6 @@ def compute_correlation_ci(x, y, sims=10000, confidence_level=99, pivotal=True):
         print(f"An error occurred: {e}")
 
 
-###############################################################################################################################
-
-# 1-Sample Tests
-import numpy as np
-
-def resample_one_group_count(box, sample_stat, sample_size, count_what="A", two_tailed=True, sims=10000, proportion=False, return_resamples=False):
-    """
-    Calculate a p-value for a count or proportion. Used to compare a sample to a population/base rate.
-
-    Parameters:
-        box (np array or list): Box model representing population
-        sample_stat (float): Statistic for the sample
-        sample_size (int): Number of individuals (or sites, etc.) in sample
-        count_what (char): What character in the box model should be counted. Default "A".
-        two_tailed (bool): Whether to compute a two-tailed p-value. If False, do one-tailed.
-        sims (int): How many simulations to run. Default 10,000
-        proportion (bool): Calculate count or proportion (default count)
-        return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
-
-    Returns:
-        p-value
-        resampling data (if desired)
-    """
-
-    dataArr = np.array(box)  #Converts box model to NumPy array
-
-    #Resampling loop
-    resampleArr = np.zeros(sims)  #Preallocates array to store resampling results
-    for i in range(sims):
-        p_sample = np.random.choice(dataArr, sample_size, replace=True)  #Samples from the box model (with replacement)
-        p_count = np.sum(p_sample == count_what)
-        if proportion:
-            p_count = p_count/sample_size
-        resampleArr[i] = p_count
-
-    #Compute p-value
-    if proportion:
-        observed = np.sum(dataArr == count_what)
-    else:
-        observed = np.mean(dataArr == count_what)
-    p = p_value_resampled(observed_stat = sample_stat, simulated_stats = resampleArr, two_tailed=two_tailed)
-
-    #Return results
-    if return_resamples:
-        return p, resampleArr
-    else:
-        return p
-
-
-def confidence_interval_count(box, sample_size, confidence_level=99, count_what="A", sims=10000, pivotal=True, proportion=False, return_resamples=False):
-    """
-    Calculate percentile confidence interval for a count or proportion.
-
-    Parameters:
-        box (np array or list): Box model representing population
-        sample_size (int): Number of individuals (or sites, etc.) in sample
-        confidence_level (float): The level of confidence interval you want (95%, 99%, etc.) This needs to be a number between 0 and 100.
-        count_what (char): What character in the box model should be counted. Default "A".
-        sims (int): How many simulations to run. Default 10,000
-        pivotal (bool): Whether to compute a pivotal confidence interval (default True). If False, percentile will be used.
-        proportion (bool): Calculate count or proportion (default count)
-        return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
-
-    Returns:
-        confidence interval (as numpy array)
-        resampling data (if desired)
-    """
-
-    dataArr = np.array(box)  #Converts box model to Numpy array
-
-    if pivotal==True and proportion==False:  #Percentile CIs don't use Mobs
-        Mobs = np.sum(dataArr==count_what)
-    elif pivotal==True and proportion==True:
-        Mobs = np.mean(dataArr==count_what)
-
-    #Resampling loop
-    resampleArr = np.zeros(sims)
-    for i in range(sims):
-        p_sample = np.random.choice(dataArr, sample_size, replace=True)  #Samples from the box model (with replacement)
-        p_count = np.sum(p_sample == count_what)
-        if proportion:  #Convert to proportions if desired
-            p_count = p_count/sample_size
-        resampleArr[i] = p_count
-
-    #Compute confidence interval
-    CIpercentile = np.percentile(resampleArr, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
-    if pivotal:
-        CIpivotal = np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
-        CI = CIpivotal
-    else:
-        CI = CIpercentile
-
-    #Return results
-    if return_resamples:
-        return CI, resampleArr
-    else:
-        return CI
-
-
-def CI_percentile_to_pivotal(Mobs, CIpercentile):
-    """
-    Convert percentile confidence interval to pivotal confidence interval.
-
-    Parameters:
-        Mobs (float): Measured quantity you want to put a CI on (mean, median, etc.)
-        CIpercentile (list or Numpy array): Percentile CI
-
-    Returns:
-        Confidence interval (Numpy array)
-    """
-    return np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
-
-
-def confidence_interval_one_sample(data, measure_function, confidence_level=99, sims=10000, pivotal=True, return_resamples=False):
-    """
-    Calculates a confidence interval for a measure on a 1-D array based on the specified confidence level.
-
-    Parameters:
-        data (list or np.array): 1-D array or list of numeric data
-        measure function (function name): A function that returns your measure, such as np.median or a custom function
-        confidence_level (float): The confidence level expressed as a percentage. Defaults to 99.
-        sims (int): How many simulations to run. Default 10,000
-        pivotal (bool): Whether to compute a pivotal confidence interval (default True). If False, percentile will be used.
-        return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
-
-    Returns:
-        confidence interval (as numpy array)
-        resampling data (if desired)
-    """
-    # Ensure data is a numpy array for efficient operations
-    dataArr = np.array(data)
-
-    #Get sample measure
-    Mobs = measure_function(dataArr)
-
-    #Resampling loop
-    resampleArr = np.zeros(sims)
-    for i in range(sims):
-        p_sample = np.random.choice(dataArr, len(dataArr), replace=True)  #Samples from the data (with replacement)
-        p_measure = measure_function(p_sample)
-        resampleArr[i] = p_measure
-
-    #Compute confidence interval
-    CIpercentile = np.percentile(resampleArr, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
-    if pivotal:
-        CIpivotal = np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
-        CI = CIpivotal
-    else:
-        CI = CIpercentile
-
-    #Return results
-    if return_resamples:
-        return CI, resampleArr
-    else:
-        return CI
-
-
-########################################################################################################################################
-
-#Paired data
-
-def paired_plot(data, group_labels=["", ""], line_color="gray", point_color="black"):
-    """
-    Plots connected dot plots for 2 groups of paired data and lines
-
-    Inputs:
-        data: two-column array or data frame of paired data points
-        group_labels: list of what each group should be labeled (default unlabeled)
-        line_color: color of connecting lines (default gray)
-        point_color: color of points (default black)
-
-    Output:
-        ax: connected dot plot
-
-    """
-
-    dataArr = np.array(data)
-    fig, ax = plt.subplots(figsize=(4, 3))
-
-    x1=0.8
-    x2=1.2
-    n = dataArr.shape[0]
-    for i in range(n):
-        ax.plot([x1, x2], [dataArr[i,0], dataArr[i,1]], color=line_color)
-
-        # Plot the points
-        ax.scatter(n*[x1-0.01], dataArr[:,0], color=point_color, s=25, label=group_labels[0])
-        ax.scatter(n*[x2+0.01], dataArr[:,1], color=point_color, s=25, label=group_labels[1])
-
-    # Fix the axes and labels
-    ax.set_xticks([x1, x2])
-    _ = ax.set_xticklabels(group_labels, fontsize='x-large')
-
-    return ax
-
-
-def paired_sample_pvalue(deltas, measure_function, sims=10000, return_resamples=False):
-    """
-    Computes a p-value for paired data
-
-    Inputs:
-        deltas (list or 1-D array): differences between paired measurements
-        measure_function (function): function that computed measure of central tendency for the deltas. Typically np.mean or np.median.
-        sims (int): How many simulations to run. Default 10,000
-        return_resamples (bool): Whether to return resampling results used to generate p-value. Primarily for pedagogical purposes.
-
-    Outputs:
-        p-value (two-tailed)
-        resamples (numpy array) if desired
-    """
-    Mobs = measure_function(deltas)
-
-    p_diffs_arr=np.zeros(sims)
-    for i in range(sims):
-        ones_arr=np.random.choice([1,-1], len(deltas))  #Randomly make each delta + or -
-        p_diffs=deltas*ones_arr
-        p_diffs_arr[i]=measure_function(p_diffs)
-
-    pval=p_value_resampled(Mobs, p_diffs_arr, two_tailed=True)
-    if return_resamples == True:
-        return pval, p_diffs_arr
-    else:
-        return pval
-
-
-#########################################################################################################################################
-
-#Linear regression, slope/intercept resampling and finding confidence interval
-
-
-import numpy as np
-import pandas as pd
-from scipy.stats import linregress
 
 def regression_ci(x, y, sims=10000, confidence_level=99, return_type='both', pivotal=True):
     """
@@ -808,6 +776,7 @@ def regression_ci(x, y, sims=10000, confidence_level=99, return_type='both', piv
     Output:
         *dict of slope and/or intercept CIs (as tuples)
     """
+    from scipy.stats import linregress
     
     slopes = []
     intercepts = []
@@ -856,9 +825,6 @@ def regression_ci(x, y, sims=10000, confidence_level=99, return_type='both', piv
 # results = bootstrap_confidence_interval(x, y, return_type='both')  # Can be 'slope', 'intercept', or 'both'
 # print(f"Results: {results}")
 
-###############################################################################################################################
-
-import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 
 def plot_bootstrap_lines(x, y, n_bootstrap=1000, original_slope=2, original_intercept=0):
