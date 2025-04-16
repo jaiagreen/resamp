@@ -265,6 +265,23 @@ def confidence_interval_one_sample(data, measure_function, confidence_level=99, 
 #TWO-GROUP COMPARISONS
 
 def two_group_comparison(group1, group2, measure=np.median, comparison="difference", boxes=1, two_tailed=True, num_simulations=10000, return_resamples=False):
+    """
+    Compares two groups of continuous data
+    
+    Inputs:
+        group1, group2 (list or array): data in list or 1-D array format
+        measure (function): function used to summarize data. Default: np.median
+        comparison ("difference" or "ratio"): how measures should be compared. Default: "difference"
+        boxes (1 or 2): specifies whether to perform a one-box or two-box test. Default: 1
+        two-tailed (bool): whether to compute a two-tailed p-value. Default: True
+        num_simulations (int): number of bootstrap simulations to run. Default: 10,000
+        return_resamples (bool): whether to return simulated results. Default: False
+    
+    Output:
+        pval (float): Simulated p-value
+        resamples (numpy array) if desired
+    
+    """
 
     if comparison == "difference":
         stat = measure(group1) - measure(group2)
