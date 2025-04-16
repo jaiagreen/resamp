@@ -264,6 +264,53 @@ def confidence_interval_one_sample(data, measure_function, confidence_level=99, 
 ################################################################################################################################
 #TWO-GROUP COMPARISONS
 
+def two_group_comparison(group1, group2, measure=np.median, comparison="difference", boxes=1, two_tailed=True, num_simulations=10000, return_resamples=False):
+
+    if comparison == "difference":
+        stat = measure(group1) - measure(group2)
+    elif comparison == "ratio":
+        stat = measure(group1)/measure(group2)
+    else:
+        raise ValueError("Comparison must be difference or ratio.")
+
+    size1 = len(group1)
+    size2 = len(group2)
+
+    # Generate the null distribution
+    ps_stats = np.zeros(num_simulations)
+    
+    if boxes==1:
+        pooled = np.concatenate([group1, group2])
+        for i in range(num_simulations):
+            # Resample from the pooled data to simulate the null hypothesis
+            ps_group1 = np.random.choice(pooled,size1)
+            ps_group2 = np.random.choice(pooled,size2)
+            if comparison == "difference":
+                ps_stats[i] = measure(ps_group1) - measure(ps_group2)
+            elif comparison == "ratio":
+                ps_stats[i] = measure(ps_group1)/measure(ps_group2)
+    elif boxes==2:
+        #Decenter and keep separate
+        arr1 = np.array(group1) - measure(group1)
+        arr2 = np.array(group2) - measure(group2)
+        for i in range(num_simulations):
+            # Resample from the decentered data to simulate the null hypothesis
+            ps_group1 = np.random.choice(arr1,size1)
+            ps_group2 = np.random.choice(arr2,size2)
+            if comparison == "difference":
+                ps_stats[i] = measure(ps_group1) - measure(ps_group2)
+            elif comparison == "ratio":
+                ps_stats[i] = measure(ps_group1)/measure(ps_group2)
+   
+    # Calculate the p-value
+    pval = p_value_resampled(stat, ps_stats, two_tailed=two_tailed)
+    if return_resamples == False:
+        return pval
+    else:
+        return pval, ps_stats
+ 
+
+
 def paired_plot(data, group_labels=["", ""], line_color="gray", point_color="black"):
     """
     Plots connected dot plots for 2 groups of paired data and lines
