@@ -73,7 +73,7 @@ def read_data(input_data):
     return data.apply(pd.to_numeric, errors='coerce')
 
 
-#Median Absolute Deviation 
+#Median Absolute Deviation
 def median_absolute_deviation(data):
     """
     Calculate the Median Absolute Deviation (MAD) of a 1D dataset.
@@ -267,7 +267,7 @@ def confidence_interval_one_sample(data, measure_function, confidence_level=99, 
 def two_group_comparison(group1, group2, measure=np.median, comparison="difference", boxes=1, two_tailed=True, num_simulations=10000, return_resamples=False):
     """
     Compares two groups of continuous data
-    
+
     Inputs:
         group1, group2 (list or array): data in list or 1-D array format
         measure (function): function used to summarize data. Default: np.median
@@ -276,11 +276,11 @@ def two_group_comparison(group1, group2, measure=np.median, comparison="differen
         two-tailed (bool): whether to compute a two-tailed p-value. Default: True
         num_simulations (int): number of bootstrap simulations to run. Default: 10,000
         return_resamples (bool): whether to return simulated results. Default: False
-    
+
     Output:
         pval (float): Simulated p-value
         resamples (numpy array) if desired
-    
+
     """
 
     if comparison == "difference":
@@ -295,7 +295,7 @@ def two_group_comparison(group1, group2, measure=np.median, comparison="differen
 
     # Generate the null distribution
     ps_stats = np.zeros(num_simulations)
-    
+
     if boxes==1:
         pooled = np.concatenate([group1, group2])
         for i in range(num_simulations):
@@ -318,14 +318,48 @@ def two_group_comparison(group1, group2, measure=np.median, comparison="differen
                 ps_stats[i] = measure(ps_group1) - measure(ps_group2)
             elif comparison == "ratio":
                 ps_stats[i] = measure(ps_group1)/measure(ps_group2)
-   
+
     # Calculate the p-value
     pval = p_value_resampled(stat, ps_stats, two_tailed=two_tailed)
     if return_resamples == False:
         return pval
     else:
         return pval, ps_stats
- 
+
+
+def two_group_diff_CI(group1, group2, measure=np.median, confidence_level=99, CItype="pivotal", num_simulations=10000, return_resamples=False):
+
+    Mobs = measure(group1) - measure(group2)
+
+    size1 = len(group1)
+    size2 = len(group2)
+
+    # Generate the resampling distribution
+    ps_stats = np.zeros(num_simulations)
+
+    for i in range(num_simulations):
+        # Resample from the data
+        ps_group1 = np.random.choice(group1,size1)
+        ps_group2 = np.random.choice(group2,size2)
+        if comparison == "difference":
+            ps_stats[i] = measure(ps_group1) - measure(ps_group2)
+        elif comparison == "ratio":
+            ps_stats[i] = measure(ps_group1)/measure(ps_group2)
+
+    #Compute confidence interval
+    CIpercentile = np.percentile(ps_stats, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
+    if pivotal:
+        CIpivotal = np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
+        CI = CIpivotal
+    else:
+        CI = CIpercentile
+
+    #Return results
+    if return_resamples:
+        return CI, ps_stats
+    else:
+        return CI
+
 
 
 def paired_plot(data, group_labels=["", ""], line_color="gray", point_color="black"):
@@ -573,7 +607,7 @@ def resample_relative_risk(observed_data, event_row_index, baseline_index=0, sim
         event_row_index (int): which row contains event of interest
         baseline_index (int): which column is the baseline for comparison
         sims (int): number of resampling simulations to run
-    
+
     Returns:
         Numpy array: resampled relative risk values
         reference_treatment_index (int):
@@ -586,7 +620,7 @@ def resample_relative_risk(observed_data, event_row_index, baseline_index=0, sim
     total_rows, total_columns = observed_data.shape
     if total_rows > 2 or total_columns>2:
         raise ValueError ("This function only works for 2x2 arrays")
-    
+
     # Calculate the total counts for each column (treatment group)
     total_counts_per_column = observed_data.sum(axis=0)
 
@@ -611,10 +645,10 @@ def resample_relative_risk(observed_data, event_row_index, baseline_index=0, sim
 
         # Calculate the probability of the event for the baseline group
         prob_event_baseline = simulated_sample[event_row_index, baseline_index] / total_counts_per_column[baseline_index]
-        
+
         # Calculate the probability of the event for the other treatment group
         prob_event_other = simulated_sample[event_row_index, 1 - baseline_index] / total_counts_per_column[1 - baseline_index]
-        
+
         # Calculate the probability of the event for the reference treatment group
         prob_event_treatment1 = simulated_sample[event_row_index, reference_treatment_index] / total_counts_per_column[reference_treatment_index]
 
@@ -770,7 +804,7 @@ def permute_correlation(x, y, sims=10000):
     - y (np.array): Values of variable 2.
     - sims (int, optional): Number of permutations to perform (default 10000).
     - num_simulations (int, optional): Number of permutations to perform (default 10000).
-    
+
     Returns:
     - np.array: Simulated correlation coefficients.
     """
@@ -801,7 +835,7 @@ def compute_correlation_ci(x, y, sims=10000, confidence_level=99, pivotal=True):
     try:
         Mobs = pearsonr(x, y)[0]
         simulated_correlations = np.zeros(sims)
-        
+
         observed_correlation = pearsonr(x, y)[0]
         simulated_correlations = []
 
@@ -811,16 +845,16 @@ def compute_correlation_ci(x, y, sims=10000, confidence_level=99, pivotal=True):
             resampled_y = y[indices]
             resample_correlation = pearsonr(resampled_x, resampled_y)[0]
             simulated_correlations[i]=resample_correlation
-        
+
         CIpercentile = np.percentile(simulated_correlations, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
         if pivotal:
             CIpivotal = np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
             CI = CIpivotal
         else:
             CI = CIpercentile
-        
+
         return CI
-        
+
     except Exception as e:
         print(f"An error occurred: {e}")
 
@@ -841,25 +875,25 @@ def regression_ci(x, y, sims=10000, confidence_level=99, return_type='both', piv
         *dict of slope and/or intercept CIs (as tuples)
     """
     from scipy.stats import linregress
-    
+
     slopes = []
     intercepts = []
     n = len(x)
     alpha = 100 - confidence_level
     percentile_lower = alpha / 2
     percentile_upper = 100 - alpha / 2
-    
+
     # Resampling and fitting
     for i in range(sims):
         sample_indices = np.random.choice(range(n), size=n, replace=True)
         x_sample = x[sample_indices]
         y_sample = y[sample_indices]
-        
+
         # Using scipy.stats.linregress
         slope, intercept, r_value, p_value, std_err = linregress(x_sample, y_sample)
         slopes.append(slope)
         intercepts.append(intercept)
-    
+
     # Preparing the output
     result = {}
     if pivotal:
@@ -871,7 +905,7 @@ def regression_ci(x, y, sims=10000, confidence_level=99, return_type='both', piv
         result['slope'] = (slope_lower_bound, slope_upper_bound)
         if pivotal:
             result['slope'] = CI_percentile_to_pivotal(obs_slope, result['slope'])
-    
+
     if return_type in ('intercept', 'both'):
         intercept_lower_bound = np.percentile(intercepts, percentile_lower)
         intercept_upper_bound = np.percentile(intercepts, percentile_upper)
