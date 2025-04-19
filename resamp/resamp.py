@@ -328,7 +328,21 @@ def two_group_comparison(group1, group2, measure=np.median, comparison="differen
 
 
 def two_group_diff_CI(group1, group2, measure=np.median, confidence_level=99, CItype="pivotal", num_simulations=10000, return_resamples=False):
+    """
+    Generates confidence interval for two groups of data
 
+    Inputs:
+        group1, group2 (list or array): data in list or 1-D array format
+        measure (function): function used to summarize data. Default: np.median
+        confidence_level (float): confidence level for CI. alpha=100-confidence_level. Default:99
+        CItype (string): specifies whether to compute pivotal or percentile CIs. Default: "pivotal"
+        num_simulations (int): number of bootstrap simulations to run. Default: 10,000
+        return_resamples (bool): whether to return simulated results. Default: False
+
+    Output:
+        CI (numpy array): confidence interval
+        resamples (numpy array) if desired
+    """
     Mobs = measure(group1) - measure(group2)
 
     size1 = len(group1)
