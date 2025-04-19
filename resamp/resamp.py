@@ -345,7 +345,7 @@ def two_group_diff_CI(group1, group2, measure=np.median, confidence_level=99, CI
 
     #Compute confidence interval
     CIpercentile = np.percentile(ps_stats, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
-    if pivotal:
+    if CItype == "pivotal":
         CIpivotal = np.array([2*Mobs-CIpercentile[1], 2*Mobs-CIpercentile[0]])
         CI = CIpivotal
     else:
