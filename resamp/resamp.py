@@ -341,10 +341,7 @@ def two_group_diff_CI(group1, group2, measure=np.median, confidence_level=99, CI
         # Resample from the data
         ps_group1 = np.random.choice(group1,size1)
         ps_group2 = np.random.choice(group2,size2)
-        if comparison == "difference":
-            ps_stats[i] = measure(ps_group1) - measure(ps_group2)
-        elif comparison == "ratio":
-            ps_stats[i] = measure(ps_group1)/measure(ps_group2)
+        ps_stats[i] = measure(ps_group1) - measure(ps_group2)
 
     #Compute confidence interval
     CIpercentile = np.percentile(ps_stats, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
