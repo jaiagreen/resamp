@@ -619,10 +619,6 @@ def resample_relative_risk(observed_data, event_row_index, baseline_index=0, sim
         baseline_index (int): which column is the baseline for comparison
         sims (int): number of resampling simulations to run
 
-    Returns:
-        Numpy array: resampled relative risk values
-        reference_treatment_index (int):
-
     Output:
         array of relative risk values
     """
@@ -661,10 +657,10 @@ def resample_relative_risk(observed_data, event_row_index, baseline_index=0, sim
         prob_event_other = simulated_sample[event_row_index, 1 - baseline_index] / total_counts_per_column[1 - baseline_index]
 
         # Calculate the probability of the event for the reference treatment group
-        prob_event_treatment1 = simulated_sample[event_row_index, reference_treatment_index] / total_counts_per_column[reference_treatment_index]
+        prob_event_treatment1 = simulated_sample[event_row_index, baseline_index] / total_counts_per_column[baseline_index]
 
         # Calculate the probability of the event for the other treatment group
-        prob_event_other_treatment = simulated_sample[event_row_index, 1 - reference_treatment_index] / total_counts_per_column[1 - reference_treatment_index]
+        prob_event_other_treatment = simulated_sample[event_row_index, 1 - baseline_index] / total_counts_per_column[1 - baseline_index]
 
         # Calculate the Risk Ratio (RR) for the current simulated dataset and store it
         simulated_rr[i] = prob_event_other / prob_event_baseline
