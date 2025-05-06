@@ -2,8 +2,8 @@
 
 ### ACTIVE FINAL SCRIPT
 
-## VERSION - 1.7.1 - edited p_value_resampled to be two-tailed, not loaded to Team project or pip
-## DATE: 11 MAY 2024
+## VERSION - 1.7.10 
+## DATE: 6 MAY 2025
 ## AUTHOR: VISHANTH HARI RAJ, JANE SHEVTSOV, KRISTIN MCCULLY
 ## SUPERVISOR: JANE SHEVTSOV
 
