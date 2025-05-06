@@ -847,7 +847,7 @@ def compute_correlation_ci(x, y, sims=10000, confidence_level=99, pivotal=True):
         observed_correlation = pearsonr(x, y)[0]
         simulated_correlations = []
 
-        for i in range(num_simulations):
+        for i in range(sims):
             indices = np.random.choice(np.arange(len(x)), size=len(x), replace=True)
             resampled_x = x[indices]
             resampled_y = y[indices]
