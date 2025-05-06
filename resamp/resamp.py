@@ -15,6 +15,7 @@ import logging
 import os
 import seaborn as sns
 import matplotlib.pyplot as plt
+from scipy.stats.stats import pearsonr
 
 # CORE FUNCTIONS
 
