@@ -2,7 +2,7 @@
 
 ### ACTIVE FINAL SCRIPT
 
-## VERSION - 1.7.10 
+## VERSION - 1.7.10
 ## DATE: 6 MAY 2025
 ## AUTHOR: VISHANTH HARI RAJ, JANE SHEVTSOV, KRISTIN MCCULLY
 ## SUPERVISOR: JANE SHEVTSOV
@@ -843,9 +843,7 @@ def compute_correlation_ci(x, y, sims=10000, confidence_level=99, pivotal=True):
     try:
         Mobs = pearsonr(x, y)[0]
         simulated_correlations = np.zeros(sims)
-
         observed_correlation = pearsonr(x, y)[0]
-        simulated_correlations = []
 
         for i in range(sims):
             indices = np.random.choice(np.arange(len(x)), size=len(x), replace=True)
