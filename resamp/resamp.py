@@ -3,7 +3,7 @@
 ### ACTIVE FINAL SCRIPT
 
 ## VERSION - 1.7.10
-## DATE: 6 MAY 2025
+## DATE: 14 MAY 2025
 ## AUTHOR: VISHANTH HARI RAJ, JANE SHEVTSOV, KRISTIN MCCULLY
 ## SUPERVISOR: JANE SHEVTSOV
 
@@ -20,7 +20,7 @@ from scipy.stats.stats import pearsonr
 # CORE FUNCTIONS
 
 #This should be the canonical function for p-values in resamp
-def p_value_resampled(observed_stat, simulated_stats, two_tailed=True):
+def p_value_resampled(observed_stat, simulated_stats, two_tailed=True, force_right=False):
     """
     Calculates the p-value for a statistic using bootstrap methods,
     determining first if the observed statistic lies on the left or right side of the distribution's mean.
@@ -28,12 +28,16 @@ def p_value_resampled(observed_stat, simulated_stats, two_tailed=True):
     Parameters:
         observed_stat (float): The observed statistic.
         simulated_stats (np.array): The array of resampled statistics.
-        two_tailed (bool): If True, perform a two-tailed test; otherwise, do one-tailed. Defaults to True.
+        two_tailed (bool): If True, perform a two-tailed test; otherwise, do one-tailed. Default: True
+        force_right (bool): If True, compute right-sided p-value regardless of observed and null values. May be needed for F and chi tests. Default: False
 
     Returns:
         p (float): The p-value.
     """
     try:
+        if two_tailed==True and force_right==True:
+            raise ValueError("Cannot specify right-sided p-value for two-tailed test.")
+
         # Determine the side of the distribution where the observed data lies
         mean_simulated_stats = np.mean(simulated_stats)
         is_right_side = observed_stat > mean_simulated_stats
@@ -44,10 +48,10 @@ def p_value_resampled(observed_stat, simulated_stats, two_tailed=True):
                 tail_proportion = np.mean(simulated_stats >= observed_stat) + np.mean(simulated_stats <= -observed_stat)
             else:
                 # For a two-tailed test, consider both tails of the distribution (left side logic)
-                tail_proportion = np.mean(simulated_stats <= observed_stat) + np.mean(simulated_stats >= -observed_stat) # FROM KRISTIN: Added - to second calculation
+                tail_proportion = np.mean(simulated_stats <= observed_stat) + np.mean(simulated_stats >= -observed_stat)
             p_value = tail_proportion
         else:
-            if is_right_side:
+            if is_right_side or force_right:
                 # For a one-tailed test, only consider the tail of interest (right side logic)
                 p_value = np.mean(simulated_stats >= observed_stat)
             else:
@@ -816,6 +820,7 @@ def permute_correlation(x, y, sims=10000):
     Returns:
     - np.array: Simulated correlation coefficients.
     """
+    from scipy.stats.stats import pearsonr
     try:
         x = np.asarray(x)
         y = np.asarray(y)
@@ -840,6 +845,7 @@ def compute_correlation_ci(x, y, sims=10000, confidence_level=99, pivotal=True):
     - confidence_level (float, optional): Confidence level for the interval (default: 99).
     - pivotal (bool, optional): Whether to return a pivotal confidence interval (default: True).
     """
+    from scipy.stats.stats import pearsonr
     try:
         Mobs = pearsonr(x, y)[0]
         simulated_correlations = np.zeros(sims)
@@ -917,7 +923,7 @@ def regression_ci(x, y, sims=10000, confidence_level=99, return_type='both', piv
         intercept_upper_bound = np.percentile(intercepts, percentile_upper)
         result['intercept'] = (intercept_lower_bound, intercept_upper_bound)
         if pivotal:
-            result['intercept'] = CI_percentile_to_pivotal(obs_slope, result['intercept'])
+            result['intercept'] = CI_percentile_to_pivotal(obs_intercept, result['intercept'])
 
     return result
 
@@ -929,9 +935,10 @@ def regression_ci(x, y, sims=10000, confidence_level=99, return_type='both', piv
 # results = bootstrap_confidence_interval(x, y, return_type='both')  # Can be 'slope', 'intercept', or 'both'
 # print(f"Results: {results}")
 
-from sklearn.linear_model import LinearRegression
 
 def plot_bootstrap_lines(x, y, n_bootstrap=1000, original_slope=2, original_intercept=0):
+    from sklearn.linear_model import LinearRegression
+
     slopes = []
     intercepts = []
 
