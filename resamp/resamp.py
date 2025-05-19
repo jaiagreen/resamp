@@ -16,6 +16,7 @@ import os
 import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy.stats.stats import pearsonr
+from scipy.stats.stats import spearmanr
 
 # CORE FUNCTIONS
 
@@ -807,55 +808,72 @@ def plot_null_distribution(sims, corr_obs, two_tailed=False):
         print(f"Error plotting null distribution: {e}")
 
 
-def permute_correlation(x, y, sims=10000):
+def permute_correlation(x, y, sims=10000, method="pearson"):
     """
-    Generate simulated correlation coefficients by permuting one variable and calculating Pearson's correlation.
+    Generate simulated correlation coefficients by permuting one variable and calculating Pearson or Spearman correlation.
 
     Parameters:
     - x (np.array): Values of variable 1.
     - y (np.array): Values of variable 2.
-    - sims (int, optional): Number of permutations to perform (default 10000).
-    - num_simulations (int, optional): Number of permutations to perform (default 10000).
+    - sims (int, optional): Number of permutations to perform (default: 10000).
+    - num_simulations (int, optional): Number of permutations to perform (default: 10000).
+    - method (string, optional): Compute correlation using "pearson" or "spearman" (default: "pearson")
 
     Returns:
     - np.array: Simulated correlation coefficients.
     """
     from scipy.stats.stats import pearsonr
+    from scipy.stats.stats import spearmanr
     try:
+        if method != "pearson" and method != "spearman":
+            raise ValueError("Method must be pearson or spearman.")
         x = np.asarray(x)
         y = np.asarray(y)
         simulated_correlations = np.zeros(sims)
         for i in range(sims):
             permuted_x = np.random.permutation(x)
-            simulated_correlations[i] = pearsonr(permuted_x, y)[0]
+            if method == "pearson":
+                simulated_correlations[i] = pearsonr(permuted_x, y)[0]
+            elif method == "spearman":
+                simulated_correlations[i] = spearmanr(permuted_x, y)[0]
         return simulated_correlations
     except Exception as e:
         print(f"Error generating simulated correlations: {e}")
         return np.array([])  # Return an empty array in case of error
 
 
-def compute_correlation_ci(x, y, sims=10000, confidence_level=99, pivotal=True):
+def compute_correlation_ci(x, y, method="pearson", sims=10000, confidence_level=99, pivotal=True):
     """
     Compute the confidence interval around the observed correlation by resampling.
 
     Parameters:
     - x (np.array): Values of variable 1.
     - y (np.array): Values of variable 2.
+    - method (string, optional): Compute correlation using "pearson" or "spearman" (default: "pearson")
     - sims (int, optional): Number of bootstrap samples to generate (default: 10000).
     - confidence_level (float, optional): Confidence level for the interval (default: 99).
     - pivotal (bool, optional): Whether to return a pivotal confidence interval (default: True).
     """
     from scipy.stats.stats import pearsonr
+    from scipy.stats.stats import spearmanr
     try:
-        Mobs = pearsonr(x, y)[0]
-        simulated_correlations = np.zeros(sims)
-        observed_correlation = pearsonr(x, y)[0]
+        if method != "pearson" and method != "spearman":
+            raise ValueError("Method must be pearson or spearman.")
 
+        if method == "pearson":
+            Mobs = pearsonr(x, y)[0]
+        elif method == "spearman":
+            Mobs = spearmanr(x,y)[0]
+
+        simulated_correlations = np.zeros(sims)
         for i in range(sims):
             indices = np.random.choice(np.arange(len(x)), size=len(x), replace=True)
             resampled_x = x[indices]
             resampled_y = y[indices]
-            resample_correlation = pearsonr(resampled_x, resampled_y)[0]
+            if method == "pearson":
+                resample_correlation = pearsonr(resampled_x, resampled_y)[0]
+            elif method == "spearman":
+                resample_correlation = spearmanr(resampled_x, resampled_y)[0]
             simulated_correlations[i]=resample_correlation
 
         CIpercentile = np.percentile(simulated_correlations, sorted([(100-confidence_level)/2, 100-(100-confidence_level)/2]))
