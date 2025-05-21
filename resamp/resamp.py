@@ -1102,6 +1102,80 @@ def find_power2(pval_function, sims=1000, alpha=0.01, verbose=True, **kwargs):
     return power
 
 
+#Sample two groups
+def sample_two_groups(group1, group2):
+    """
+    Draws a sample for two independent groups
+
+    Inputs:
+        group1, group2 (list or array): data in list or 1-D array format
+
+    Output:
+        ps_group1, ps_group2 (arrays): arrays of resampled data 
+    """
+
+    # Resample from the data
+    ps_group1 = np.random.choice(group1,len(group1))
+    ps_group2 = np.random.choice(group2,len(group2))
+    
+    return ps_group1, ps_group2
+
+
+
+#Sample categorical
+def sample_categorical(table, with_replacement=True):
+    """
+    Draws one sample consistent with a contingency table.
+
+    Parameters:
+        table (np.array or pd.DataFrame): contingency table with observed frequencies with treatments in columns and outcomes in rows.
+        with_replacement (bool): Indicates whether sampling should be with replacement.
+    
+    Returns:
+        sim: sampled data table
+     """
+
+    if isinstance(table, pd.DataFrame):
+        table = table.values
+
+    total_rows, total_columns = table.shape
+    expected_data = calculate_expected(table) # Requires treatments in columns and outcomes in rows - TODO - allow input of expected table that is set up differently?
+
+    total_counts_per_column = table.sum(axis=0)
+
+    # Create a pooled data array combining all categories across rows and columns
+    pooled_data = np.concatenate([np.repeat(row, sum(table[row, :])) for row in range(total_rows)])
+
+    sim = np.zeros_like(table)
+    for col in range(total_columns):
+        column_sample = np.random.choice(pooled_data, total_counts_per_column[col], replace=with_replacement)
+        for row in range(total_rows):
+            # Count occurrences of each category in the column sample
+            sim[row, col] = np.sum(column_sample == row)
+
+    return sim
+
+
+#Resample bivariate
+def sample_bivariate(x, y):
+    """
+    Compute the confidence interval around the observed correlation by resampling.
+
+    Parameters:
+    - x (np.array): Values of variable 1.
+    - y (np.array): Values of variable 2.
+    """
+    try:
+        indices = np.random.choice(np.arange(len(x)), size=len(x), replace=True)
+        resampled_x = x[indices]
+        resampled_y = y[indices]
+ 
+        return resampled_x, resampled_y
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
 
 def power(*data, test_function, test_returns="statistic", alpha=0.01, reps=1000, **kwargs):
     """
@@ -1117,16 +1191,22 @@ def power(*data, test_function, test_returns="statistic", alpha=0.01, reps=1000,
         return handle_two_lists(data[0], data[1], mode=mode, **kwargs)
     else:
         raise ValueError(f"Expected 1 or 2 data arguments, got {len(data)}")
-
-
+        
+   #Create/identify phantom world
+   
 
     pvals = np.zeros(reps)
     for i in range(reps):
+        #Draw sample from phantom world
+   
+        #Perform NHST on sample
         if test_returns == "statistic":
             #Pass data and call p-value function
         elif test_returns == "p-value":
             #Pass data
 
-
+    #Decide if difference is significant
     power = np.mean(pvals < alpha)
     return power
+    
+
