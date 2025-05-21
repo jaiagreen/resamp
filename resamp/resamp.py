@@ -1057,3 +1057,76 @@ def power_analysis(obs_diff, group1, group2, num_simulations=1000, alpha=0.01, p
 
     required_sample_sizes = (sample_size_group1, sample_size_group2)
     return required_sample_sizes, achieved_power
+
+def find_power2(pval_function, sims=1000, alpha=0.01, verbose=True, **kwargs):
+    """
+    Perform a power analysis using resampling methods.
+
+    Parameters:
+    pval_function -- a function that takes in data (supplied in **kwargs) and returns a p-value
+    sims -- number of simulations to perform
+    alpha -- significance level
+    measure -- 'median' or 'mean', the statistical measure to use for comparison
+    verbose -- if True, print intermediate results
+
+    Returns:
+    power -- the power that was achieved with the sample sizes
+    """
+
+    pvals = np.zeros(sims)
+    for i in range(sims):
+        #Sample from phantom world
+        sim_group1 = np.random.choice(group1, len(group1), replace=True)
+        sim_group2 = np.random.choice(group2, len(group2), replace=True)
+        phantom_diff = calculate_statistic(sim_group1, measure) - calculate_statistic(sim_group2, measure)
+
+        #Feed samples into p-value generator
+        pooled = np.concatenate([group1, group2])
+        null_diffs = np.zeros(sims)
+        for j in range(sims):
+            # Resample from the pooled data to simulate the null hypothesis
+            #null_resample = np.random.choice(pooled, sample_size_group1 + sample_size_group2, replace=True)
+            null_group1 = np.random.choice(pooled,len(sim_group1))
+            null_group2 = np.random.choice(pooled,len(sim_group1))
+            null_diffs[j] = calculate_statistic(null_group1, measure) - calculate_statistic(null_group2, measure)
+
+        #Calculate the p-value for this simulation
+        pval = (np.sum(null_diffs >= abs(phantom_diff)) + np.sum(null_diffs <= -abs(phantom_diff))) / sims
+        pvals[i]=pval
+
+        if verbose and i%10==0:
+            print(i)
+
+    #Calculate the overall power based on the simulations
+    power = np.mean(pvals < alpha)
+    return power
+
+
+
+def power(*data, test_function, test_returns="statistic", alpha=0.01, reps=1000, **kwargs):
+    """
+    Computes power of a test given two datasets.
+
+    """
+
+    if len(data) == 0:
+        raise ValueError("At least one list or array is required.")
+    elif len(data) == 1:
+        return handle_single_list(data[0], mode=mode, **kwargs)
+    elif len(data) == 2:
+        return handle_two_lists(data[0], data[1], mode=mode, **kwargs)
+    else:
+        raise ValueError(f"Expected 1 or 2 data arguments, got {len(data)}")
+
+
+
+    pvals = np.zeros(reps)
+    for i in range(reps):
+        if test_returns == "statistic":
+            #Pass data and call p-value function
+        elif test_returns == "p-value":
+            #Pass data
+
+
+    power = np.mean(pvals < alpha)
+    return power
