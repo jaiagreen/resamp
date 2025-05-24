@@ -1111,13 +1111,13 @@ def sample_two_groups(group1, group2):
         group1, group2 (list or array): data in list or 1-D array format
 
     Output:
-        ps_group1, ps_group2 (arrays): arrays of resampled data 
+        ps_group1, ps_group2 (arrays): arrays of resampled data
     """
 
     # Resample from the data
     ps_group1 = np.random.choice(group1,len(group1))
     ps_group2 = np.random.choice(group2,len(group2))
-    
+
     return ps_group1, ps_group2
 
 
@@ -1130,7 +1130,7 @@ def sample_categorical(table, with_replacement=True):
     Parameters:
         table (np.array or pd.DataFrame): contingency table with observed frequencies with treatments in columns and outcomes in rows.
         with_replacement (bool): Indicates whether sampling should be with replacement.
-    
+
     Returns:
         sim: sampled data table
      """
@@ -1169,7 +1169,7 @@ def sample_bivariate(x, y):
         indices = np.random.choice(np.arange(len(x)), size=len(x), replace=True)
         resampled_x = x[indices]
         resampled_y = y[indices]
- 
+
         return resampled_x, resampled_y
 
     except Exception as e:
@@ -1177,36 +1177,51 @@ def sample_bivariate(x, y):
 
 
 
-def power(*data, test_function, test_returns="statistic", alpha=0.01, reps=1000, **kwargs):
+def power(*data, sample_function, summary_function, test_function, test_returns="statistic", alpha=0.01, reps=1000, **kwargs):
     """
     Computes power of a test given two datasets.
+
+    * data (list or Numpy array): One or two lists or arrays of data
+    * sample_function: Function to resample phantom world
+    * summary_function: Function to compute summary statistic
+    * test_function: Function to carry out NHST
+    * test_returns ("statistic" or "p-value"): Describes value returned by test function
 
     """
 
     if len(data) == 0:
         raise ValueError("At least one list or array is required.")
-    elif len(data) == 1:
-        return handle_single_list(data[0], mode=mode, **kwargs)
-    elif len(data) == 2:
-        return handle_two_lists(data[0], data[1], mode=mode, **kwargs)
-    else:
+    elif len(data)>2:
         raise ValueError(f"Expected 1 or 2 data arguments, got {len(data)}")
-        
-   #Create/identify phantom world
-   
 
     pvals = np.zeros(reps)
     for i in range(reps):
         #Draw sample from phantom world
-   
+        if len(data)==1 and sample_function==sample_categorical:
+            world_sample = sample_categorical(data[0], data[1])
+        elif len(data)==2 and sample_function==sample_two_groups:
+            world_sample = sample_two_groups(data[0], data[1])
+        elif len(data)==2 and sample_function==sample_bivariate:
+            world_sample = sample_bivariate(data[0], data[1])
+        else:
+            raise ValueError("Sampling function specified does not work with this power function or does not match data provided.)
+
+        #Compute Mobs
+        Mobs = summary_function(*data, **kwargs)
+
         #Perform NHST on sample
         if test_returns == "statistic":
             #Pass data and call p-value function
+            stats = test_function(*data, **kwargs)
+            p = p_value_resampled(Mobs, stats, **kwargs)
+            pvals[i] = p
         elif test_returns == "p-value":
             #Pass data
+            p = test_function(*data, **kwargs)
+            pvals[i] = p
+       else:
+           raise ValueError('test_returns must be "statistic" or "p-value".')
 
     #Decide if difference is significant
     power = np.mean(pvals < alpha)
     return power
-    
-
