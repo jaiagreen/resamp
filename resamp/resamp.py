@@ -1188,7 +1188,6 @@ def power(*data, sample_function, summary_function, test_function, test_returns=
     * test_returns ("statistic" or "p-value"): Describes value returned by test function
 
     """
-
     if len(data) == 0:
         raise ValueError("At least one list or array is required.")
     elif len(data)>2:
@@ -1204,7 +1203,7 @@ def power(*data, sample_function, summary_function, test_function, test_returns=
         elif len(data)==2 and sample_function==sample_bivariate:
             world_sample = sample_bivariate(data[0], data[1])
         else:
-            raise ValueError("Sampling function specified does not work with this power function or does not match data provided.)
+            raise ValueError("Sampling function specified does not work with this power function or does not match data provided.")
 
         #Compute Mobs
         Mobs = summary_function(*data, **kwargs)
@@ -1212,15 +1211,15 @@ def power(*data, sample_function, summary_function, test_function, test_returns=
         #Perform NHST on sample
         if test_returns == "statistic":
             #Pass data and call p-value function
-            stats = test_function(*data, **kwargs)
+            stats = test_function(world_sample, **kwargs)
             p = p_value_resampled(Mobs, stats, **kwargs)
             pvals[i] = p
         elif test_returns == "p-value":
             #Pass data
-            p = test_function(*data, **kwargs)
+            p = test_function(world_sample, **kwargs)
             pvals[i] = p
-       else:
-           raise ValueError('test_returns must be "statistic" or "p-value".')
+        else:
+            raise ValueError('test_returns must be "statistic" or "p-value".')
 
     #Decide if difference is significant
     power = np.mean(pvals < alpha)
