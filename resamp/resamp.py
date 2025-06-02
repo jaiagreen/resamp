@@ -15,8 +15,8 @@ import logging
 import os
 import seaborn as sns
 import matplotlib.pyplot as plt
-from scipy.stats.stats import pearsonr
-from scipy.stats.stats import spearmanr
+from scipy.stats import pearsonr
+from scipy.stats import spearmanr
 
 # CORE FUNCTIONS
 
@@ -822,8 +822,8 @@ def permute_correlation(x, y, sims=10000, method="pearson"):
     Returns:
     - np.array: Simulated correlation coefficients.
     """
-    from scipy.stats.stats import pearsonr
-    from scipy.stats.stats import spearmanr
+    from scipy.stats import pearsonr
+    from scipy.stats import spearmanr
     try:
         if method != "pearson" and method != "spearman":
             raise ValueError("Method must be pearson or spearman.")
@@ -854,8 +854,8 @@ def compute_correlation_ci(x, y, method="pearson", sims=10000, confidence_level=
     - confidence_level (float, optional): Confidence level for the interval (default: 99).
     - pivotal (bool, optional): Whether to return a pivotal confidence interval (default: True).
     """
-    from scipy.stats.stats import pearsonr
-    from scipy.stats.stats import spearmanr
+    from scipy.stats import pearsonr
+    from scipy.stats import spearmanr
     try:
         if method != "pearson" and method != "spearman":
             raise ValueError("Method must be pearson or spearman.")
@@ -1057,3 +1057,52 @@ def power_analysis(obs_diff, group1, group2, num_simulations=1000, alpha=0.01, p
 
     required_sample_sizes = (sample_size_group1, sample_size_group2)
     return required_sample_sizes, achieved_power
+
+
+def find_power(group1, group2, samp_size1, samp_size2, sims=1000, alpha=0.01, measure='median', verbose=False):
+    """
+    Perform a power analysis using resampling methods.
+
+    Parameters:
+    group1 and group 2 -- data for groups 1 and 2
+    samp_size1 and samp_size 2 -- desired sample sizes for groups 1 and 2 (can be different)
+    sims -- number of simulations to perform
+    alpha -- significance level
+    measure -- 'median' or 'mean', the statistical measure to use for comparison
+    verbose -- if True, print intermediate results
+
+    Returns:
+    achieved_power -- the power that was achieved with the sample sizes
+    """
+
+    group1 = np.array(group1)
+    group2 = np.array(group2)
+
+    pvals = np.zeros(sims)
+    for i in range(sims):
+        # Simulate resampling from each group
+        sim_group1 = np.random.choice(group1, samp_size1, replace=True)
+        sim_group2 = np.random.choice(group2, samp_size2, replace=True)
+        phantom_diff = calculate_statistic(sim_group1, measure) - calculate_statistic(sim_group2, measure)
+
+        # Generate the null distribution
+        pooled = np.concatenate([sim_group1, sim_group2])
+        null_diffs = np.zeros(sims)
+        for j in range(sims):
+            # Resample from the pooled data to simulate the null hypothesis
+            #null_resample = np.random.choice(pooled, sample_size_group1 + sample_size_group2, replace=True)
+            null_group1 = np.random.choice(pooled,len(sim_group1))
+            null_group2 = np.random.choice(pooled,len(sim_group2))
+            null_diffs[j] = calculate_statistic(null_group1, measure) - calculate_statistic(null_group2, measure)
+
+        #Calculate the p-value for this simulation
+        pval = (np.sum(null_diffs >= abs(phantom_diff)) + np.sum(null_diffs <= -abs(phantom_diff))) / sims
+        pvals[i]=pval
+
+        if verbose and i%50==0:
+            print(i)
+
+    #Calculate the overall power based on the simulations
+    achieved_power = np.mean(pvals < alpha)
+
+    return achieved_power
